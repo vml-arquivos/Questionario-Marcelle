@@ -64,15 +64,15 @@
 
 
 ## Fase 11: Configuração para PostgreSQL 17 e Coolify
-- [ ] Atualizar schema Drizzle para PostgreSQL
-- [ ] Configurar variáveis de ambiente para Coolify
-- [ ] Atualizar README com instruções PostgreSQL
-- [ ] Atualizar docker-compose para PostgreSQL 17
-- [ ] Testar conexão com PostgreSQL
-- [ ] Fazer commit final com configurações PostgreSQL
-- [ ] Preparar instruções de deploy via Coolify
+- [x] Atualizar schema Drizzle para PostgreSQL
+- [x] Configurar variáveis de ambiente para Coolify
+- [x] Atualizar README com instruções PostgreSQL
+- [x] Atualizar docker-compose para PostgreSQL 17
+- [x] Testar conexão com PostgreSQL
+- [x] Fazer commit final com configurações PostgreSQL
+- [x] Preparar instruções de deploy via Coolify
 
 ## Fase 12: Informações do Pesquisador
-- [ ] Adicionar dados de Marcelle Victoria Alves de Lima
-- [ ] Configurar identificação do projeto
-- [ ] Fazer commit final com identificação
+- [x] Adicionar dados de Marcelle Victoria Alves de Lima
+- [x] Configurar identificação do projeto
+- [x] Fazer commit final com identificação
