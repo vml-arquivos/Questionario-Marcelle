@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import * as XLSX from "xlsx";
 import { useQuery } from "@tanstack/react-query";
 import { trpc } from "@/lib/trpc";
 import {
@@ -224,7 +225,6 @@ const PALETA = [COR.indigo, COR.verde, COR.amarelo, COR.vermelho, COR.roxo, COR.
 // ═══════════════════════════════════════════════════════════════════════════
 
 const exportarExcel = async (respostas: any[]) => {
-  const XLSX = await import("xlsx");
 
   // Aba 1: Respostas individuais
   const cabecalho = [
