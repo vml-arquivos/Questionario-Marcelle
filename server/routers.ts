@@ -91,6 +91,37 @@ export const appRouter = router({
           familyDiabetes: z.string().nullable(),
           familyThyroidIssues: z.string().nullable(),
           familyObesity: z.string().nullable(),
+          // Social determinants of health
+          educationLevel: z.string().nullable(),
+          incomeRange: z.string().nullable(),
+          existingDiagnosis: z.string().nullable(),
+          onMedication: z.string().nullable(),
+          // Detailed food fields
+          sugaryDrinksFrequency: z.string().nullable(),
+          fastFoodFrequency: z.string().nullable(),
+          breakfastFrequency: z.string().nullable(),
+          lateNightEating: z.string().nullable(),
+          dietType: z.string().nullable(),
+          // Digital behavior
+          screenTimeHours: z.string().nullable(),
+          socialMediaHours: z.string().nullable(),
+          // Sleep quality
+          sleepHoursPerNight: z.string().nullable(),
+          wakeUpTired: z.string().nullable(),
+          sleepLatency: z.string().nullable(),
+          // Mental health
+          stressLevel: z.string().nullable(),
+          anxietyFrequency: z.string().nullable(),
+          mentalHealthDiagnosis: z.string().nullable(),
+          // New symptoms
+          symptomHairLoss: z.number().nullable(),
+          symptomBrainFog: z.number().nullable(),
+          symptomConstantHunger: z.number().nullable(),
+          symptomFrequentUrination: z.number().nullable(),
+          symptomPalpitations: z.number().nullable(),
+          // Female health
+          irregularMenstrualCycle: z.string().nullable(),
+          pcosDiagnosis: z.string().nullable(),
         })
       )
       .mutation(async ({ input, ctx }) => {
@@ -135,6 +166,37 @@ export const appRouter = router({
           familyDiabetes: input.familyDiabetes,
           familyThyroidIssues: input.familyThyroidIssues,
           familyObesity: input.familyObesity,
+          // Social determinants
+          educationLevel: input.educationLevel,
+          incomeRange: input.incomeRange,
+          existingDiagnosis: input.existingDiagnosis,
+          onMedication: input.onMedication,
+          // Detailed food
+          sugaryDrinksFrequency: input.sugaryDrinksFrequency,
+          fastFoodFrequency: input.fastFoodFrequency,
+          breakfastFrequency: input.breakfastFrequency,
+          lateNightEating: input.lateNightEating,
+          dietType: input.dietType,
+          // Digital behavior
+          screenTimeHours: input.screenTimeHours,
+          socialMediaHours: input.socialMediaHours,
+          // Sleep quality
+          sleepHoursPerNight: input.sleepHoursPerNight,
+          wakeUpTired: input.wakeUpTired,
+          sleepLatency: input.sleepLatency,
+          // Mental health
+          stressLevel: input.stressLevel,
+          anxietyFrequency: input.anxietyFrequency,
+          mentalHealthDiagnosis: input.mentalHealthDiagnosis,
+          // New symptoms
+          symptomHairLoss: input.symptomHairLoss,
+          symptomBrainFog: input.symptomBrainFog,
+          symptomConstantHunger: input.symptomConstantHunger,
+          symptomFrequentUrination: input.symptomFrequentUrination,
+          symptomPalpitations: input.symptomPalpitations,
+          // Female health
+          irregularMenstrualCycle: input.irregularMenstrualCycle,
+          pcosDiagnosis: input.pcosDiagnosis,
           findrisc_score: findrisc.score,
           findrisc_risk_category: findrisc.category,
           ipAddress,
