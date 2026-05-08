@@ -104,6 +104,43 @@ async function startServer() {
     }
   });
 
+  // ── /api/delete-before — apaga respostas antes de uma data/hora específica ──
+  app.post("/api/delete-before", async (req, res) => {
+    const { password, before } = req.body as { password?: string; before?: string };
+    const DASHBOARD_PASSWORD = process.env.DASHBOARD_PASSWORD ?? "endocricheck2025";
+    if (!password || password !== DASHBOARD_PASSWORD) {
+      res.status(401).json({ ok: false, error: "Senha incorreta" });
+      return;
+    }
+    if (!before) {
+      res.status(400).json({ ok: false, error: "Campo 'before' (ISO timestamp) é obrigatório" });
+      return;
+    }
+    try {
+      const pool = getPool();
+      const client = await pool.connect();
+      try {
+        const countResult = await client.query(
+          `SELECT COUNT(*) as total FROM "survey_responses" WHERE "submittedAt" < $1`,
+          [before]
+        );
+        await client.query(
+          `DELETE FROM "survey_responses" WHERE "submittedAt" < $1`,
+          [before]
+        );
+        res.json({
+          ok: true,
+          message: `Respostas antes de ${before} apagadas`,
+          deletedCount: parseInt(countResult.rows[0].total),
+        });
+      } finally {
+        client.release();
+      }
+    } catch (err) {
+      res.status(500).json({ ok: false, error: String(err) });
+    }
+  });
+
   // ── /api/db-status — read-only diagnostic endpoint ───────────────────────
   app.get("/api/db-status", async (_req, res) => {
     try {

@@ -222,15 +222,66 @@ const PALETA = [COR.indigo, COR.verde, COR.amarelo, COR.vermelho, COR.roxo, COR.
 // EXPORTAR EXCEL — planilha limpa, legível, em português
 // ═══════════════════════════════════════════════════════════════════════════
 
-const exportarExcel = (respostas: any[]) => {
+const exportarExcel = async (respostas: any[]) => {
+  // Importação dinâmica — xlsx só é carregado quando o usuário clica em Exportar
+  // Isso evita qualquer impacto no bundle principal e previne crashes de runtime
+  const XLSX = await import("xlsx");
 
-  // Helper para escapar campos CSV
-  const esc = (v: any) => {
-    const s = String(v ?? "");
-    return s.includes(",") || s.includes('"') || s.includes("\n") ? `"${s.replace(/"/g, '""')}"` : s;
+  // ── Helpers ────────────────────────────────────────────────────────────────
+  // Estilo de cabeçalho: fundo azul escuro, texto branco, negrito
+  const estiloHeader = (bgColor: string) => ({
+    font: { bold: true, color: { rgb: "FFFFFF" }, sz: 11 },
+    fill: { fgColor: { rgb: bgColor }, patternType: "solid" },
+    alignment: { horizontal: "center", vertical: "center", wrapText: true },
+    border: {
+      top:    { style: "thin", color: { rgb: "CCCCCC" } },
+      bottom: { style: "thin", color: { rgb: "CCCCCC" } },
+      left:   { style: "thin", color: { rgb: "CCCCCC" } },
+      right:  { style: "thin", color: { rgb: "CCCCCC" } },
+    },
+  });
+
+  const estiloCelula = (bgColor?: string) => ({
+    font: { sz: 10 },
+    fill: bgColor ? { fgColor: { rgb: bgColor }, patternType: "solid" } : undefined,
+    alignment: { vertical: "center", wrapText: false },
+    border: {
+      top:    { style: "thin", color: { rgb: "E5E7EB" } },
+      bottom: { style: "thin", color: { rgb: "E5E7EB" } },
+      left:   { style: "thin", color: { rgb: "E5E7EB" } },
+      right:  { style: "thin", color: { rgb: "E5E7EB" } },
+    },
+  });
+
+  const estiloTitulo = {
+    font: { bold: true, sz: 16, color: { rgb: "1E3A5F" } },
+    alignment: { horizontal: "center", vertical: "center" },
   };
 
-  // Aba 1: Respostas individuais
+  const estiloSubtitulo = {
+    font: { bold: true, sz: 11, color: { rgb: "374151" } },
+    fill: { fgColor: { rgb: "EFF6FF" }, patternType: "solid" },
+    alignment: { horizontal: "left", vertical: "center" },
+  };
+
+  // Aplica estilo a uma célula específica
+  const aplicarEstilo = (ws: any, addr: string, estilo: any) => {
+    if (!ws[addr]) ws[addr] = { t: "s", v: "" };
+    ws[addr].s = estilo;
+  };
+
+  // Aplica estilo a uma linha inteira
+  const estilizarLinha = (ws: any, linha: number, ncols: number, estilo: any) => {
+    for (let c = 0; c < ncols; c++) {
+      const addr = XLSX.utils.encode_cell({ r: linha, c });
+      if (!ws[addr]) ws[addr] = { t: "s", v: "" };
+      ws[addr].s = estilo;
+    }
+  };
+
+  const total = respostas.length;
+
+  // ── ABA 1: RESPOSTAS INDIVIDUAIS ──────────────────────────────────────────
   const cabecalho = [
     "Nº","Data de Envio","Idade","Faixa Etária","Sexo","Peso (kg)","Altura (cm)","IMC","Classificação IMC",
     "Diagnóstico Existente","Usa Medicamento",
@@ -240,12 +291,12 @@ const exportarExcel = (respostas: any[]) => {
     "Qualidade do Sono","Horas de Sono","Acorda Cansado","Tempo para Dormir",
     "Nível de Estresse","Frequência de Ansiedade","Diagnóstico de Saúde Mental",
     "Tempo de Tela","Tempo em Redes Sociais",
-    "Sintoma: Cansaço","Sintoma: Mudança de Peso","Sintoma: Sede Excessiva",
-    "Sintoma: Sensibilidade à Temperatura","Sintoma: Pele Seca","Sintoma: Mudanças de Humor",
-    "Sintoma: Queda de Cabelo","Sintoma: Névoa Mental","Sintoma: Fome Constante",
-    "Sintoma: Urinar com Frequência","Sintoma: Palpitações","Total de Sintomas",
-    "Histórico: Glicemia Alta","Histórico Familiar: Diabetes",
-    "Histórico Familiar: Tireoide","Histórico Familiar: Obesidade",
+    "Sint: Cansaço","Sint: Mudança de Peso","Sint: Sede Excessiva",
+    "Sint: Sensib. Temperatura","Sint: Pele Seca","Sint: Mudanças de Humor",
+    "Sint: Queda de Cabelo","Sint: Névoa Mental","Sint: Fome Constante",
+    "Sint: Urinar Frequente","Sint: Palpitações","Total de Sintomas",
+    "Hist: Glicemia Alta","Hist Fam: Diabetes",
+    "Hist Fam: Tireoide","Hist Fam: Obesidade",
     "Ciclo Menstrual Irregular","Diagnóstico de SOP",
     "Pontuação FINDRISC","Risco de Diabetes (FINDRISC)"
   ];
@@ -316,60 +367,57 @@ const exportarExcel = (respostas: any[]) => {
     ];
   });
 
-  // Gerar CSV das respostas individuais
-  const todasLinhas = [cabecalho, ...linhas];
-  const csvRespostas = todasLinhas.map(row => row.map(esc).join(",")).join("\n");
+  // ── Montar a planilha de respostas individuais ────────────────────────────────
+  const ws1Data = [cabecalho, ...linhas];
+  const ws1 = XLSX.utils.aoa_to_sheet(ws1Data);
 
-  // Gerar CSV do resumo estatístico
-  const total = respostas.length;
-  const resumoLinhas: any[][] = [
-    ["RESUMO DA PESQUISA ENDOCRICHECK", "", ""],
-    ["Data de geração:", new Date().toLocaleString("pt-BR"), ""],
-    ["Total de participantes:", total, ""],
-    ["", "", ""],
-    ["=== PERFIL DOS PARTICIPANTES ===", "", ""],
-    ["Indicador", "Quantidade", "Percentual"],
+  // Larguras de coluna
+  ws1["!cols"] = [
+    { wch: 5 },  // Nº
+    { wch: 20 }, // Data
+    { wch: 7 },  // Idade
+    { wch: 18 }, // Faixa
+    { wch: 12 }, // Sexo
+    { wch: 9 },  // Peso
+    { wch: 10 }, // Altura
+    { wch: 7 },  // IMC
+    { wch: 20 }, // Classif IMC
+    { wch: 22 }, // Diagnóstico
+    { wch: 14 }, // Medicamento
+    ...Array(22).fill({ wch: 20 }), // hábitos
+    ...Array(12).fill({ wch: 14 }), // sintomas
+    ...Array(8).fill({ wch: 20 }),  // histórico
+    { wch: 10 }, // FINDRISC score
+    { wch: 28 }, // FINDRISC risco
   ];
 
-  const porSexo = contarGrupos(respostas.map(r => traduz(SEXO, r.gender)));
-  porSexo.forEach(g => resumoLinhas.push([`Sexo: ${g.name}`, g.valor, `${g.pct}%`]));
+  // Altura da linha de cabeçalho
+  ws1["!rows"] = [{ hpt: 40 }];
 
-  resumoLinhas.push(["", "", ""], ["=== FAIXA ETÁRIA ===", "", ""], ["Faixa", "Quantidade", "Percentual"]);
-  const porFaixa = contarGrupos(respostas.map(r => getFaixa(r.age)));
-  porFaixa.forEach(g => resumoLinhas.push([g.name, g.valor, `${g.pct}%`]));
+  // Estilizar cabeçalho (linha 0) — azul escuro
+  estilizarLinha(ws1, 0, cabecalho.length, estiloHeader("1E3A5F"));
 
+  // Estilizar linhas de dados com zebra (linhas alternadas)
+  for (let row = 1; row < ws1Data.length; row++) {
+    const bg = row % 2 === 0 ? "F0F4FF" : undefined;
+    estilizarLinha(ws1, row, cabecalho.length, estiloCelula(bg));
+  }
+
+  // ── ABA 2: RESUMO ESTATÍSTICO ──────────────────────────────────────────
   const imcs = respostas.map(r => toNum(r.bmi)).filter(v => v > 0);
   const imcMedio = imcs.length ? (imcs.reduce((a, b) => a + b, 0) / imcs.length) : 0;
-  resumoLinhas.push(
-    ["", "", ""],
-    ["=== IMC ===", "", ""],
-    ["IMC médio do grupo:", imcMedio.toFixed(2), classificarIMC(imcMedio)],
-    ["IMC mínimo:", imcs.length ? Math.min(...imcs).toFixed(1) : "—", ""],
-    ["IMC máximo:", imcs.length ? Math.max(...imcs).toFixed(1) : "—", ""],
-  );
-  const porIMC = contarGrupos(respostas.map(r => classificarIMC(toNum(r.bmi))));
-  porIMC.forEach(g => resumoLinhas.push([`IMC: ${g.name}`, g.valor, `${g.pct}%`]));
-
-  resumoLinhas.push(["", "", ""], ["=== HÁBITOS ALIMENTARES ===", "", ""], ["Indicador", "Quantidade", "Percentual"]);
   const ultraFreq = respostas.filter(r => ["always","frequently","often","3-5x_week","daily"].includes(r.ultraProcessedFreq)).length;
   const frutasRaro = respostas.filter(r => ["never","rarely"].includes(r.fruitsVegetablesFreq)).length;
   const semCafe = respostas.filter(r => ["never","rarely"].includes(r.breakfastFrequency)).length;
   const fastFoodFreq2 = respostas.filter(r => ["3-5x_week","daily","always","frequently"].includes(r.fastFoodFrequency)).length;
   const comNoite = respostas.filter(r => r.lateNightEating === "yes").length;
-  resumoLinhas.push(
-    ["Consomem ultraprocessados com frequência", ultraFreq, `${pct(ultraFreq, total)}%`],
-    ["Raramente comem frutas e verduras", frutasRaro, `${pct(frutasRaro, total)}%`],
-    ["Não tomam café da manhã regularmente", semCafe, `${pct(semCafe, total)}%`],
-    ["Comem fast food 3+ vezes por semana", fastFoodFreq2, `${pct(fastFoodFreq2, total)}%`],
-    ["Comem à noite com frequência", comNoite, `${pct(comNoite, total)}%`],
-  );
-
-  resumoLinhas.push(["", "", ""], ["=== ATIVIDADE FÍSICA ===", "", ""], ["Nível", "Quantidade", "Percentual"]);
+  const sedentarios = respostas.filter(r => r.physicalActivityHours === "none").length;
+  const porSexo = contarGrupos(respostas.map(r => traduz(SEXO, r.gender)));
+  const porFaixa = contarGrupos(respostas.map(r => getFaixa(r.age)));
+  const porIMC = contarGrupos(respostas.map(r => classificarIMC(toNum(r.bmi))));
   const porAtividade = contarGrupos(respostas.map(r => traduz(ATIVIDADE, r.physicalActivityHours)));
-  porAtividade.forEach(g => resumoLinhas.push([g.name, g.valor, `${g.pct}%`]));
 
-  resumoLinhas.push(["", "", ""], ["=== SINTOMAS ENDÓCRINOS ===", "", ""], ["Sintoma", "Quantidade", "Percentual"]);
-  const sintomasCampos = [
+  const sintomasCampos: [string, string][] = [
     ["Cansaço", "symptomFatigue"],
     ["Mudança de peso", "symptomWeightChange"],
     ["Sede excessiva", "symptomExcessiveThirst"],
@@ -382,23 +430,190 @@ const exportarExcel = (respostas: any[]) => {
     ["Urinar com frequência", "symptomFrequentUrination"],
     ["Palpitações", "symptomPalpitations"],
   ];
+
+  // Construção da aba de resumo como array de linhas
+  const ws2Rows: any[][] = [];
+  let r2 = 0; // contador de linha
+
+  const addTitulo = (texto: string) => {
+    ws2Rows.push([texto, "", ""]);
+    r2++;
+  };
+  const addSubtitulo = (texto: string) => {
+    ws2Rows.push([texto, "", ""]);
+    r2++;
+  };
+  const addHeader = (cols: string[]) => {
+    ws2Rows.push(cols);
+    r2++;
+  };
+  const addRow = (cols: any[]) => {
+    ws2Rows.push(cols);
+    r2++;
+  };
+  const addBlank = () => {
+    ws2Rows.push(["", "", ""]);
+    r2++;
+  };
+
+  // Título principal
+  addTitulo("ENDOCRICHECK — RELATÓRIO COMPLETO DA PESQUISA");
+  addRow([`Data de geração: ${new Date().toLocaleString("pt-BR")}`, "", ""]);
+  addRow([`Total de participantes: ${total}`, "", ""]);
+  addBlank();
+
+  // Perfil
+  addSubtitulo("👥 PERFIL DOS PARTICIPANTES");
+  addHeader(["Indicador", "Quantidade", "Percentual"]);
+  porSexo.forEach(g => addRow([`Sexo: ${g.name}`, g.valor, `${g.pct}%`]));
+  addBlank();
+
+  addSubtitulo("🎂 FAIXA ETÁRIA");
+  addHeader(["Faixa", "Quantidade", "Percentual"]);
+  porFaixa.forEach(g => addRow([g.name, g.valor, `${g.pct}%`]));
+  addBlank();
+
+  addSubtitulo("⚖️ IMC (ÍNDICE DE MASSA CORPORAL)");
+  addHeader(["Indicador", "Valor", "Classificação"]);
+  addRow(["IMC médio do grupo", imcMedio.toFixed(2), classificarIMC(imcMedio)]);
+  addRow(["IMC mínimo", imcs.length ? Math.min(...imcs).toFixed(1) : "—", ""]);
+  addRow(["IMC máximo", imcs.length ? Math.max(...imcs).toFixed(1) : "—", ""]);
+  addBlank();
+  addHeader(["Classificação IMC", "Quantidade", "Percentual"]);
+  porIMC.forEach(g => addRow([g.name, g.valor, `${g.pct}%`]));
+  addBlank();
+
+  addSubtitulo("🍔 HÁBITOS ALIMENTARES");
+  addHeader(["Indicador", "Quantidade", "Percentual"]);
+  addRow(["Consomem ultraprocessados com frequência", ultraFreq, `${pct(ultraFreq, total)}%`]);
+  addRow(["Raramente comem frutas e verduras", frutasRaro, `${pct(frutasRaro, total)}%`]);
+  addRow(["Não tomam café da manhã regularmente", semCafe, `${pct(semCafe, total)}%`]);
+  addRow(["Comem fast food 3+ vezes por semana", fastFoodFreq2, `${pct(fastFoodFreq2, total)}%`]);
+  addRow(["Comem à noite com frequência", comNoite, `${pct(comNoite, total)}%`]);
+  addBlank();
+
+  addSubtitulo("🏋️ ATIVIDADE FÍSICA");
+  addHeader(["Nível", "Quantidade", "Percentual"]);
+  addRow(["Sedentários (nenhuma atividade)", sedentarios, `${pct(sedentarios, total)}%`]);
+  porAtividade.forEach(g => addRow([g.name, g.valor, `${g.pct}%`]));
+  addBlank();
+
+  addSubtitulo("🤕 SINTOMAS ENDÓCRINOS");
+  addHeader(["Sintoma", "Quantidade", "Percentual"]);
   sintomasCampos.forEach(([nome, campo]) => {
     const n = respostas.filter(r => r[campo]).length;
-    resumoLinhas.push([nome, n, `${pct(n, total)}%`]);
+    addRow([nome, n, `${pct(n, total)}%`]);
+  });
+  addBlank();
+
+  addSubtitulo("🧬 HISTÓRICO FAMILIAR");
+  addHeader(["Condição", "Tem histórico", "Não tem"]);
+  addRow(["Diabetes",
+    `${pct(respostas.filter(r => r.familyDiabetes && !["no","None","null"].includes(r.familyDiabetes)).length, total)}%`,
+    `${pct(respostas.filter(r => r.familyDiabetes === "no").length, total)}%`
+  ]);
+  addRow(["Tireoide",
+    `${pct(respostas.filter(r => r.familyThyroidIssues && !["no","None","null"].includes(r.familyThyroidIssues)).length, total)}%`,
+    `${pct(respostas.filter(r => r.familyThyroidIssues === "no").length, total)}%`
+  ]);
+  addRow(["Obesidade",
+    `${pct(respostas.filter(r => r.familyObesity && !["no","None","null"].includes(r.familyObesity)).length, total)}%`,
+    `${pct(respostas.filter(r => r.familyObesity === "no").length, total)}%`
+  ]);
+  addBlank();
+
+  addSubtitulo("📊 RISCO DE DIABETES (FINDRISC)");
+  addHeader(["Categoria de Risco", "Quantidade", "Percentual"]);
+  contarGrupos(respostas.map(r => traduz(RISCO_FINDRISC, r.findrisc_risk_category)))
+    .forEach(g => addRow([g.name, g.valor, `${g.pct}%`]));
+
+  const ws2 = XLSX.utils.aoa_to_sheet(ws2Rows);
+  ws2["!cols"] = [{ wch: 45 }, { wch: 15 }, { wch: 15 }];
+
+  // Estilizar aba de resumo
+  let rowIdx = 0;
+  // Título (linha 0)
+  aplicarEstilo(ws2, XLSX.utils.encode_cell({ r: 0, c: 0 }), estiloTitulo);
+  ws2["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 2 } }];
+  ws2["!rows"] = [{ hpt: 36 }];
+
+  // Percorre e estiliza subseções
+  ws2Rows.forEach((row, i) => {
+    const v = String(row[0] ?? "");
+    if (v.startsWith("👥") || v.startsWith("🎂") || v.startsWith("⚖") || v.startsWith("🍔") ||
+        v.startsWith("🏋") || v.startsWith("🤕") || v.startsWith("🧬") || v.startsWith("📊")) {
+      estilizarLinha(ws2, i, 3, estiloSubtitulo);
+    } else if (["Indicador","Faixa","Classificação IMC","Nível","Sintoma","Condição","Categoria de Risco"].includes(v)) {
+      estilizarLinha(ws2, i, 3, estiloHeader("3B5998"));
+    } else if (v === "ENDOCRICHECK — RELATÓRIO COMPLETO DA PESQUISA") {
+      // já tratado acima
+    } else if (v !== "") {
+      const bg = i % 2 === 0 ? "F8FAFF" : undefined;
+      estilizarLinha(ws2, i, 3, estiloCelula(bg));
+    }
   });
 
-  const csvResumo = resumoLinhas.map(row => row.map(esc).join(",")).join("\n");
+  // ── ABA 3: DADOS BRUTOS (para análise) ─────────────────────────────────
+  const ws3Cabecalho = ["ID","Data","Idade","Faixa","Sexo","IMC","Classif.IMC",
+    "Ultraproc.","Frutas","Atividade","Sono","Estresse",
+    "Sintomas (total)","Risco FINDRISC"];
+  const ws3Linhas = respostas.map(r => {
+    const imc = toNum(r.bmi);
+    const nSint = [
+      r.symptomFatigue, r.symptomWeightChange, r.symptomExcessiveThirst,
+      r.symptomTemperatureSensitivity, r.symptomDrySkin, r.symptomMoodChanges,
+      r.symptomHairLoss, r.symptomBrainFog, r.symptomConstantHunger,
+      r.symptomFrequentUrination, r.symptomPalpitations
+    ].filter(Boolean).length;
+    return [
+      r.id,
+      new Date(r.submittedAt).toLocaleString("pt-BR"),
+      r.age,
+      getFaixa(r.age),
+      traduz(SEXO, r.gender),
+      parseFloat(imc.toFixed(1)),
+      classificarIMC(imc),
+      traduz(FREQUENCIA, r.ultraProcessedFreq),
+      traduz(FREQUENCIA, r.fruitsVegetablesFreq),
+      traduz(ATIVIDADE, r.physicalActivityHours),
+      traduz(SONO_QUALIDADE, r.sleepQuality),
+      traduz(ESTRESSE, r.stressLevel),
+      nSint,
+      traduz(RISCO_FINDRISC, r.findrisc_risk_category),
+    ];
+  });
+  const ws3 = XLSX.utils.aoa_to_sheet([ws3Cabecalho, ...ws3Linhas]);
+  ws3["!cols"] = [
+    { wch: 5 }, { wch: 20 }, { wch: 7 }, { wch: 14 }, { wch: 12 },
+    { wch: 7 }, { wch: 20 }, { wch: 22 }, { wch: 22 }, { wch: 22 },
+    { wch: 14 }, { wch: 14 }, { wch: 15 }, { wch: 28 },
+  ];
+  ws3["!rows"] = [{ hpt: 36 }];
+  estilizarLinha(ws3, 0, ws3Cabecalho.length, estiloHeader("059669"));
+  for (let row = 1; row <= ws3Linhas.length; row++) {
+    const bg = row % 2 === 0 ? "ECFDF5" : undefined;
+    estilizarLinha(ws3, row, ws3Cabecalho.length, estiloCelula(bg));
+  }
 
-  // Combinar os dois CSVs em um único arquivo separado por linha em branco
-  const csvFinal = "\uFEFF" + // BOM para Excel reconhecer UTF-8
-    "=== RESPOSTAS INDIVIDUAIS ===\n" + csvRespostas +
-    "\n\n=== RESUMO ESTATÍSTICO ===\n" + csvResumo;
+  // ── Montar o workbook e baixar ─────────────────────────────────────────────────
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws1, "📝 Respostas Individuais");
+  XLSX.utils.book_append_sheet(wb, ws2, "📊 Resumo Estatístico");
+  XLSX.utils.book_append_sheet(wb, ws3, "🔍 Visão Rápida");
 
-  const blob = new Blob([csvFinal], { type: "text/csv;charset=utf-8;" });
+  // Propriedades do workbook
+  wb.Props = {
+    Title: "EndocriCheck — Pesquisa Endocrinológica",
+    Author: "EndocriCheck",
+    CreatedDate: new Date(),
+  };
+
+  const buf = XLSX.write(wb, { bookType: "xlsx", type: "array", cellStyles: true });
+  const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `EndocriCheck_Pesquisa_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `EndocriCheck_Pesquisa_${new Date().toISOString().slice(0, 10)}.xlsx`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
