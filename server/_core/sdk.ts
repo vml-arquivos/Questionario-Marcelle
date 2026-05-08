@@ -2,11 +2,31 @@ import { AXIOS_TIMEOUT_MS, COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import { ForbiddenError } from "@shared/_core/errors";
 import axios, { type AxiosInstance } from "axios";
 import { parse as parseCookieHeader } from "cookie";
+import { createHmac } from "crypto";
 import type { Request } from "express";
 import { SignJWT, jwtVerify } from "jose";
 import type { User } from "../../drizzle/schema";
 import * as db from "../db";
 import { ENV } from "./env";
+
+// Local JWT verification (matches the implementation in oauth.ts)
+const LOCAL_JWT_SECRET = process.env.JWT_SECRET ?? process.env.SESSION_SECRET ?? "endocricheck-fallback-secret-2025";
+function verifyLocalJWT(token: string): Record<string, unknown> | null {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    const [header, body, sig] = parts;
+    const expected = Buffer.from(
+      createHmac("sha256", LOCAL_JWT_SECRET).update(`${header}.${body}`).digest()
+    ).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+    if (sig !== expected) return null;
+    const payload = JSON.parse(Buffer.from(body, "base64").toString("utf8"));
+    if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) return null;
+    return payload;
+  } catch {
+    return null;
+  }
+}
 import type {
   ExchangeTokenRequest,
   ExchangeTokenResponse,
@@ -205,6 +225,17 @@ class SDKServer {
       return null;
     }
 
+    // First try local JWT (created by oauth.ts password-based login)
+    const localPayload = verifyLocalJWT(cookieValue);
+    if (localPayload) {
+      const { openId, appId, name } = localPayload as Record<string, unknown>;
+      if (isNonEmptyString(openId) && isNonEmptyString(appId) && isNonEmptyString(name)) {
+        console.log("[Auth] Local JWT verified for", openId);
+        return { openId, appId, name };
+      }
+    }
+
+    // Fallback: try jose-based JWT (for backwards compatibility)
     try {
       const secretKey = this.getSessionSecret();
       const { payload } = await jwtVerify(cookieValue, secretKey, {
