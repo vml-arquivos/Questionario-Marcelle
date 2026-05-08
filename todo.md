@@ -87,10 +87,10 @@
 
 
 ## Fase 14: Configuração para Google Cloud Platform (GCP)
-- [ ] Criar arquivo .env completo com todas as variáveis
-- [ ] Criar arquivo .env.production para produção
-- [ ] Criar guia de deploy GCP com Cloud Run
-- [ ] Criar guia de configuração PostgreSQL no Cloud SQL
-- [ ] Criar script de inicialização do banco de dados
-- [ ] Documentar todas as variáveis de ambiente
-- [ ] Fazer commit com configuração GCP
+- [x] Criar arquivo .env completo com todas as variáveis
+- [x] Criar arquivo .env.production para produção
+- [x] Criar guia de deploy GCP com Cloud Run
+- [x] Criar guia de configuração PostgreSQL no Cloud SQL
+- [x] Criar script de inicialização do banco de dados
+- [x] Documentar todas as variáveis de ambiente
+- [x] Fazer commit com configuração GCP
