@@ -1,0 +1,130 @@
+================================================================================
+VARIÁVEIS DE AMBIENTE ESSENCIAIS - COOLIFY
+EndocriCheck - Pesquisa sobre Saúde Endócrina
+Pesquisador: Marcelle Vitória Alves de Lima (1º F)
+================================================================================
+
+COPIE E COLE ESTAS VARIÁVEIS NO COOLIFY:
+
+================================================================================
+1. BANCO DE DADOS (PostgreSQL 17)
+================================================================================
+
+DATABASE_URL=postgresql://endocrine_user:sua_senha_segura@postgres:5432/endocrine_survey
+
+Explicação:
+- endocrine_user = usuário do PostgreSQL
+- sua_senha_segura = senha que você definiu no PostgreSQL
+- postgres = hostname (use "postgres" se estiver no Coolify, "localhost" se local)
+- 5432 = porta padrão PostgreSQL
+- endocrine_survey = nome do banco de dados
+
+================================================================================
+2. AMBIENTE
+================================================================================
+
+NODE_ENV=production
+
+Explicação: Define que está em produção
+
+================================================================================
+3. TÍTULO DA APLICAÇÃO
+================================================================================
+
+VITE_APP_TITLE=EndocriCheck - Pesquisa Endocrinológica
+
+Explicação: Título que aparece no navegador
+
+================================================================================
+4. CHAVE DE SESSÃO (GERE UMA NOVA)
+================================================================================
+
+SESSION_SECRET=sua_chave_secreta_minimo_32_caracteres
+
+Como gerar uma chave segura:
+- No Linux/Mac: openssl rand -base64 32
+- Copie e cole o resultado aqui
+
+Exemplo de chave gerada:
+SESSION_SECRET=a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6
+
+================================================================================
+5. DOMÍNIO DA APLICAÇÃO
+================================================================================
+
+VITE_APP_DOMAIN=https://seu-dominio.com
+
+Explicação: URL onde a aplicação será acessada
+Exemplos:
+- https://endocricheck.seudominio.com
+- https://seu-coolify-url.com
+- https://seu-ip:porta
+
+================================================================================
+6. PORTA E HOST (NÃO ALTERE)
+================================================================================
+
+PORT=3000
+HOST=0.0.0.0
+
+Explicação: Configuração padrão para Coolify
+
+================================================================================
+RESUMO PARA COPIAR E COLAR
+================================================================================
+
+DATABASE_URL=postgresql://endocrine_user:sua_senha_segura@postgres:5432/endocrine_survey
+NODE_ENV=production
+VITE_APP_TITLE=EndocriCheck - Pesquisa Endocrinológica
+SESSION_SECRET=sua_chave_secreta_minimo_32_caracteres
+VITE_APP_DOMAIN=https://seu-dominio.com
+PORT=3000
+HOST=0.0.0.0
+
+================================================================================
+PASSO A PASSO NO COOLIFY
+================================================================================
+
+1. Acesse o Coolify Dashboard
+2. Selecione a aplicação EndocriCheck
+3. Vá para "Variáveis de Ambiente"
+4. Clique em "Adicionar Variável"
+5. Para cada variável acima:
+   - Nome: (ex: DATABASE_URL)
+   - Valor: (ex: postgresql://...)
+   - Clique em "Adicionar"
+6. Clique em "Salvar"
+7. Clique em "Deploy"
+
+================================================================================
+AUTENTICAÇÃO LOCAL
+================================================================================
+
+Usuário padrão: admin
+Senha padrão: admin123
+
+IMPORTANTE: Altere a senha após o primeiro login!
+
+================================================================================
+ACESSAR A APLICAÇÃO
+================================================================================
+
+Após o deploy:
+
+1. Formulário Público: https://seu-dominio.com/survey
+2. Dashboard Admin: https://seu-dominio.com/dashboard
+3. Home: https://seu-dominio.com/
+
+Login no Dashboard:
+- Usuário: admin
+- Senha: admin123 (altere após primeiro login)
+
+================================================================================
+TUDO PRONTO!
+================================================================================
+
+O sistema está 100% independente e pronto para produção.
+Não usa Manus, não usa APIs externas.
+Tudo roda dentro da sua VPS no Coolify.
+
+Sucesso! 🚀
