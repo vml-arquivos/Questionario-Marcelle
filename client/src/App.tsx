@@ -11,8 +11,12 @@ import Dashboard from "./pages/Dashboard";
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Home} />
+      {/* QR Code e URL direto para o formulário */}
+      <Route path="/pesquisa" component={SurveyForm} />
       <Route path="/survey" component={SurveyForm} />
+      
+      {/* Rotas principais */}
+      <Route path="/" component={Home} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />

@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -8,11 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
-import { QRCodeSVG as QRCode } from "qrcode.react";
-import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
+import { CheckCircle2, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface FormData {
-  userType: string;
+  participantName: string; // Opcional
   age: string;
   gender: string;
   weight: string;
@@ -33,14 +32,13 @@ interface FormData {
   symptomTemperatureSensitivity: boolean;
   symptomDrySkin: boolean;
   symptomMoodChanges: boolean;
-  highBloodGlucoseHistory: string;
   familyDiabetes: string;
   familyThyroidIssues: string;
   familyObesity: string;
 }
 
 const initialFormData: FormData = {
-  userType: "",
+  participantName: "",
   age: "",
   gender: "",
   weight: "",
@@ -61,24 +59,43 @@ const initialFormData: FormData = {
   symptomTemperatureSensitivity: false,
   symptomDrySkin: false,
   symptomMoodChanges: false,
-  highBloodGlucoseHistory: "",
   familyDiabetes: "",
   familyThyroidIssues: "",
   familyObesity: "",
 };
 
-const frequencyOptions = [
-  { value: "never", label: "Nunca" },
-  { value: "rarely", label: "Raramente" },
-  { value: "sometimes", label: "Às vezes" },
-  { value: "frequently", label: "Frequentemente" },
-  { value: "always", label: "Sempre" },
+// Seções simplificadas
+const sections = [
+  {
+    title: "Informações Básicas",
+    description: "Vamos começar com algumas informações simples",
+    fields: ["participantName", "age", "gender", "weight", "height"],
+  },
+  {
+    title: "Hábitos Alimentares",
+    description: "Como é sua alimentação?",
+    fields: ["ultraProcessedFreq", "fruitsVegetablesFreq", "sweetsFreq", "mealsPerDay", "waterLitersPerDay"],
+  },
+  {
+    title: "Estilo de Vida",
+    description: "Sua rotina e hábitos",
+    fields: ["physicalActivityHours", "smokingStatus", "alcoholFrequency", "sleepQuality"],
+  },
+  {
+    title: "Sintomas",
+    description: "Você sente algum destes sintomas?",
+    fields: ["symptomFatigue", "symptomWeightChange", "symptomExcessiveThirst", "symptomTemperatureSensitivity", "symptomDrySkin", "symptomMoodChanges", "bloodPressureMedication"],
+  },
+  {
+    title: "Histórico Familiar",
+    description: "Tem alguém na família com estas condições?",
+    fields: ["familyDiabetes", "familyThyroidIssues", "familyObesity"],
+  },
 ];
 
 export default function SurveyForm() {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [currentSection, setCurrentSection] = useState(0);
-  const [showQRCode, setShowQRCode] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
   const submitMutation = trpc.survey.submit.useMutation();
@@ -109,605 +126,480 @@ export default function SurveyForm() {
   };
 
   const handleSubmit = async () => {
-    if (!formData.userType || !formData.age || !formData.gender || !formData.weight || !formData.height) {
-      toast.error("Por favor, preencha todos os campos obrigatórios");
-      return;
-    }
-
     try {
+      // Validação mínima - apenas campos obrigatórios
+      if (!formData.age || !formData.gender || !formData.weight || !formData.height) {
+        toast.error("Por favor, preencha os campos obrigatórios");
+        return;
+      }
+
+      const profileType = formData.age ? (parseInt(formData.age) < 18 ? "student" : "adult") : "unknown";
+
       await submitMutation.mutateAsync({
-        userType: formData.userType,
-        age: parseInt(formData.age),
+        participantName: formData.participantName || "Anônimo",
+        profileType,
         gender: formData.gender,
+        ageRange: formData.age,
         weight: parseFloat(formData.weight),
         height: parseFloat(formData.height),
-        bmi: parseFloat(bmi || "0"),
-        ultraProcessedFreq: formData.ultraProcessedFreq || null,
-        fruitsVegetablesFreq: formData.fruitsVegetablesFreq || null,
-        sweetsFreq: formData.sweetsFreq || null,
-        mealsPerDay: formData.mealsPerDay ? parseInt(formData.mealsPerDay) : null,
-        waterLitersPerDay: formData.waterLitersPerDay ? parseFloat(formData.waterLitersPerDay) : null,
-        physicalActivityHours: formData.physicalActivityHours || null,
-        smokingStatus: formData.smokingStatus || null,
-        alcoholFrequency: formData.alcoholFrequency || null,
-        sleepQuality: formData.sleepQuality || null,
-        bloodPressureMedication: formData.bloodPressureMedication || null,
-        symptomFatigue: formData.symptomFatigue ? 1 : 0,
-        symptomWeightChange: formData.symptomWeightChange ? 1 : 0,
-        symptomExcessiveThirst: formData.symptomExcessiveThirst ? 1 : 0,
-        symptomTemperatureSensitivity: formData.symptomTemperatureSensitivity ? 1 : 0,
-        symptomDrySkin: formData.symptomDrySkin ? 1 : 0,
-        symptomMoodChanges: formData.symptomMoodChanges ? 1 : 0,
-        highBloodGlucoseHistory: formData.highBloodGlucoseHistory || null,
-        familyDiabetes: formData.familyDiabetes || null,
-        familyThyroidIssues: formData.familyThyroidIssues || null,
-        familyObesity: formData.familyObesity || null,
+        ultraProcessedFreq: formData.ultraProcessedFreq,
+        fruitsVegetablesFreq: formData.fruitsVegetablesFreq,
+        sweetsFreq: formData.sweetsFreq,
+        mealsPerDay: formData.mealsPerDay,
+        waterLitersPerDay: formData.waterLitersPerDay,
+        physicalActivityHours: formData.physicalActivityHours,
+        smokingStatus: formData.smokingStatus,
+        alcoholFrequency: formData.alcoholFrequency,
+        sleepQuality: formData.sleepQuality,
+        bloodPressureMedication: formData.bloodPressureMedication,
+        symptomFatigue: formData.symptomFatigue,
+        symptomWeightChange: formData.symptomWeightChange,
+        symptomExcessiveThirst: formData.symptomExcessiveThirst,
+        symptomTemperatureSensitivity: formData.symptomTemperatureSensitivity,
+        symptomDrySkin: formData.symptomDrySkin,
+        symptomMoodChanges: formData.symptomMoodChanges,
+        familyDiabetes: formData.familyDiabetes,
+        familyThyroidIssues: formData.familyThyroidIssues,
+        familyObesity: formData.familyObesity,
       });
 
       setSubmitted(true);
-      toast.success("Pesquisa enviada com sucesso!");
-      setFormData(initialFormData);
-      setTimeout(() => setSubmitted(false), 5000);
+      toast.success("Pesquisa salva com sucesso! Obrigado por participar.");
+      
+      // Limpar após 3 segundos
+      setTimeout(() => {
+        setFormData(initialFormData);
+        setCurrentSection(0);
+        setSubmitted(false);
+      }, 3000);
     } catch (error) {
-      toast.error("Erro ao enviar pesquisa. Tente novamente.");
+      toast.error("Erro ao salvar a pesquisa. Tente novamente.");
       console.error(error);
     }
   };
 
-  const sections = [
-    {
-      title: "Perfil Demográfico",
-      description: "Informações básicas sobre você",
-      content: (
-        <div className="space-y-6">
-          <div>
-            <Label className="text-base font-semibold mb-3 block">Você é:</Label>
-            <RadioGroup value={formData.userType} onValueChange={(v) => handleInputChange("userType", v)}>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="student" id="student" />
-                <Label htmlFor="student" className="font-normal cursor-pointer">
-                  Aluno
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="employee" id="employee" />
-                <Label htmlFor="employee" className="font-normal cursor-pointer">
-                  Funcionário
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="adult" id="adult" />
-                <Label htmlFor="adult" className="font-normal cursor-pointer">
-                  Adulto
-                </Label>
-              </div>
-            </RadioGroup>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="age">Idade (anos) *</Label>
-              <Input
-                id="age"
-                type="number"
-                min="1"
-                max="120"
-                value={formData.age}
-                onChange={(e) => handleInputChange("age", e.target.value)}
-                placeholder="Ex: 25"
-              />
-            </div>
-            <div>
-              <Label htmlFor="gender">Gênero *</Label>
-              <Select value={formData.gender} onValueChange={(v) => handleInputChange("gender", v)}>
-                <SelectTrigger id="gender">
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="male">Masculino</SelectItem>
-                  <SelectItem value="female">Feminino</SelectItem>
-                  <SelectItem value="other">Outro</SelectItem>
-                  <SelectItem value="prefer_not_to_say">Prefiro não dizer</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="weight">Peso (kg) *</Label>
-              <Input
-                id="weight"
-                type="number"
-                step="0.1"
-                min="0"
-                value={formData.weight}
-                onChange={(e) => handleInputChange("weight", e.target.value)}
-                placeholder="Ex: 70"
-              />
-            </div>
-            <div>
-              <Label htmlFor="height">Altura (cm) *</Label>
-              <Input
-                id="height"
-                type="number"
-                step="0.1"
-                min="0"
-                value={formData.height}
-                onChange={(e) => handleInputChange("height", e.target.value)}
-                placeholder="Ex: 175"
-              />
-            </div>
-          </div>
-
-          {bmi && (
-            <Card className="bg-blue-50 border-blue-200">
-              <CardContent className="pt-6">
-                <p className="text-sm text-gray-600">Seu IMC (Índice de Massa Corporal):</p>
-                <p className="text-3xl font-bold text-blue-600">{bmi}</p>
-                <p className="text-xs text-gray-500 mt-2">
-                  {parseFloat(bmi) < 18.5 && "Baixo peso"}
-                  {parseFloat(bmi) >= 18.5 && parseFloat(bmi) < 25 && "Peso normal"}
-                  {parseFloat(bmi) >= 25 && parseFloat(bmi) < 30 && "Sobrepeso"}
-                  {parseFloat(bmi) >= 30 && "Obeso"}
-                </p>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      ),
-    },
-    {
-      title: "Hábitos Alimentares",
-      description: "Informações sobre sua alimentação",
-      content: (
-        <div className="space-y-6">
-          <div>
-            <Label className="text-base font-semibold mb-3 block">Consumo de alimentos ultraprocessados</Label>
-            <RadioGroup value={formData.ultraProcessedFreq} onValueChange={(v) => handleInputChange("ultraProcessedFreq", v)}>
-              {frequencyOptions.map((opt) => (
-                <div key={opt.value} className="flex items-center space-x-2">
-                  <RadioGroupItem value={opt.value} id={`ultra_${opt.value}`} />
-                  <Label htmlFor={`ultra_${opt.value}`} className="font-normal cursor-pointer">
-                    {opt.label}
-                  </Label>
-                </div>
-              ))}
-            </RadioGroup>
-          </div>
-
-          <div>
-            <Label className="text-base font-semibold mb-3 block">Consumo de frutas e verduras</Label>
-            <RadioGroup value={formData.fruitsVegetablesFreq} onValueChange={(v) => handleInputChange("fruitsVegetablesFreq", v)}>
-              {frequencyOptions.map((opt) => (
-                <div key={opt.value} className="flex items-center space-x-2">
-                  <RadioGroupItem value={opt.value} id={`fruits_${opt.value}`} />
-                  <Label htmlFor={`fruits_${opt.value}`} className="font-normal cursor-pointer">
-                    {opt.label}
-                  </Label>
-                </div>
-              ))}
-            </RadioGroup>
-          </div>
-
-          <div>
-            <Label className="text-base font-semibold mb-3 block">Consumo de doces e açúcares</Label>
-            <RadioGroup value={formData.sweetsFreq} onValueChange={(v) => handleInputChange("sweetsFreq", v)}>
-              {frequencyOptions.map((opt) => (
-                <div key={opt.value} className="flex items-center space-x-2">
-                  <RadioGroupItem value={opt.value} id={`sweets_${opt.value}`} />
-                  <Label htmlFor={`sweets_${opt.value}`} className="font-normal cursor-pointer">
-                    {opt.label}
-                  </Label>
-                </div>
-              ))}
-            </RadioGroup>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="mealsPerDay">Refeições por dia</Label>
-              <Input
-                id="mealsPerDay"
-                type="number"
-                min="1"
-                max="6"
-                value={formData.mealsPerDay}
-                onChange={(e) => handleInputChange("mealsPerDay", e.target.value)}
-                placeholder="Ex: 3"
-              />
-            </div>
-            <div>
-              <Label htmlFor="water">Água por dia (litros)</Label>
-              <Input
-                id="water"
-                type="number"
-                step="0.5"
-                min="0"
-                value={formData.waterLitersPerDay}
-                onChange={(e) => handleInputChange("waterLitersPerDay", e.target.value)}
-                placeholder="Ex: 2"
-              />
-            </div>
-          </div>
-        </div>
-      ),
-    },
-    {
-      title: "Estilo de Vida",
-      description: "Informações sobre seus hábitos",
-      content: (
-        <div className="space-y-6">
-          <div>
-            <Label className="text-base font-semibold mb-3 block">Atividade Física</Label>
-            <RadioGroup value={formData.physicalActivityHours} onValueChange={(v) => handleInputChange("physicalActivityHours", v)}>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value=">=4" id="activity_high" />
-                <Label htmlFor="activity_high" className="font-normal cursor-pointer">
-                  4 horas ou mais por semana
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="<4" id="activity_low" />
-                <Label htmlFor="activity_low" className="font-normal cursor-pointer">
-                  Menos de 4 horas por semana
-                </Label>
-              </div>
-            </RadioGroup>
-          </div>
-
-          <div>
-            <Label className="text-base font-semibold mb-3 block">Hábito de Fumar</Label>
-            <RadioGroup value={formData.smokingStatus} onValueChange={(v) => handleInputChange("smokingStatus", v)}>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="never" id="smoke_never" />
-                <Label htmlFor="smoke_never" className="font-normal cursor-pointer">
-                  Nunca fumei
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="former" id="smoke_former" />
-                <Label htmlFor="smoke_former" className="font-normal cursor-pointer">
-                  Ex-fumante
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="occasional" id="smoke_occasional" />
-                <Label htmlFor="smoke_occasional" className="font-normal cursor-pointer">
-                  Fumo ocasionalmente
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="daily" id="smoke_daily" />
-                <Label htmlFor="smoke_daily" className="font-normal cursor-pointer">
-                  Fumo diariamente
-                </Label>
-              </div>
-            </RadioGroup>
-          </div>
-
-          <div>
-            <Label className="text-base font-semibold mb-3 block">Consumo de Álcool</Label>
-            <RadioGroup value={formData.alcoholFrequency} onValueChange={(v) => handleInputChange("alcoholFrequency", v)}>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="never" id="alcohol_never" />
-                <Label htmlFor="alcohol_never" className="font-normal cursor-pointer">
-                  Nunca
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="rarely" id="alcohol_rarely" />
-                <Label htmlFor="alcohol_rarely" className="font-normal cursor-pointer">
-                  Raramente
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="social" id="alcohol_social" />
-                <Label htmlFor="alcohol_social" className="font-normal cursor-pointer">
-                  Socialmente
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="frequent" id="alcohol_frequent" />
-                <Label htmlFor="alcohol_frequent" className="font-normal cursor-pointer">
-                  Frequentemente
-                </Label>
-              </div>
-            </RadioGroup>
-          </div>
-
-          <div>
-            <Label className="text-base font-semibold mb-3 block">Qualidade do Sono</Label>
-            <RadioGroup value={formData.sleepQuality} onValueChange={(v) => handleInputChange("sleepQuality", v)}>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="poor" id="sleep_poor" />
-                <Label htmlFor="sleep_poor" className="font-normal cursor-pointer">
-                  Ruim
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="fair" id="sleep_fair" />
-                <Label htmlFor="sleep_fair" className="font-normal cursor-pointer">
-                  Regular
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="good" id="sleep_good" />
-                <Label htmlFor="sleep_good" className="font-normal cursor-pointer">
-                  Boa
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="excellent" id="sleep_excellent" />
-                <Label htmlFor="sleep_excellent" className="font-normal cursor-pointer">
-                  Excelente
-                </Label>
-              </div>
-            </RadioGroup>
-          </div>
-
-          <div>
-            <Label className="text-base font-semibold mb-3 block">Usa medicação para pressão arterial?</Label>
-            <RadioGroup value={formData.bloodPressureMedication} onValueChange={(v) => handleInputChange("bloodPressureMedication", v)}>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="no" id="bp_med_no" />
-                <Label htmlFor="bp_med_no" className="font-normal cursor-pointer">
-                  Não
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="yes" id="bp_med_yes" />
-                <Label htmlFor="bp_med_yes" className="font-normal cursor-pointer">
-                  Sim
-                </Label>
-              </div>
-            </RadioGroup>
-          </div>
-        </div>
-      ),
-    },
-    {
-      title: "Sintomas Endócrinos",
-      description: "Marque os sintomas que você apresenta",
-      content: (
-        <div className="space-y-6">
-          <div className="space-y-3">
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="fatigue"
-                checked={formData.symptomFatigue}
-                onCheckedChange={(checked) => handleCheckboxChange("symptomFatigue", checked as boolean)}
-              />
-              <Label htmlFor="fatigue" className="font-normal cursor-pointer">
-                Cansaço excessivo ou fadiga constante
-              </Label>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="weight_change"
-                checked={formData.symptomWeightChange}
-                onCheckedChange={(checked) => handleCheckboxChange("symptomWeightChange", checked as boolean)}
-              />
-              <Label htmlFor="weight_change" className="font-normal cursor-pointer">
-                Alterações bruscas de peso
-              </Label>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="thirst"
-                checked={formData.symptomExcessiveThirst}
-                onCheckedChange={(checked) => handleCheckboxChange("symptomExcessiveThirst", checked as boolean)}
-              />
-              <Label htmlFor="thirst" className="font-normal cursor-pointer">
-                Sede excessiva e vontade frequente de urinar
-              </Label>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="temp_sensitivity"
-                checked={formData.symptomTemperatureSensitivity}
-                onCheckedChange={(checked) => handleCheckboxChange("symptomTemperatureSensitivity", checked as boolean)}
-              />
-              <Label htmlFor="temp_sensitivity" className="font-normal cursor-pointer">
-                Sensibilidade incomum ao frio ou calor
-              </Label>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="dry_skin"
-                checked={formData.symptomDrySkin}
-                onCheckedChange={(checked) => handleCheckboxChange("symptomDrySkin", checked as boolean)}
-              />
-              <Label htmlFor="dry_skin" className="font-normal cursor-pointer">
-                Pele muito seca ou queda de cabelo excessiva
-              </Label>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="mood_changes"
-                checked={formData.symptomMoodChanges}
-                onCheckedChange={(checked) => handleCheckboxChange("symptomMoodChanges", checked as boolean)}
-              />
-              <Label htmlFor="mood_changes" className="font-normal cursor-pointer">
-                Irritabilidade ou alterações de humor frequentes
-              </Label>
-            </div>
-          </div>
-
-          <div>
-            <Label className="text-base font-semibold mb-3 block">Histórico de glicemia elevada?</Label>
-            <RadioGroup value={formData.highBloodGlucoseHistory} onValueChange={(v) => handleInputChange("highBloodGlucoseHistory", v)}>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="no" id="glucose_no" />
-                <Label htmlFor="glucose_no" className="font-normal cursor-pointer">
-                  Não
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="yes" id="glucose_yes" />
-                <Label htmlFor="glucose_yes" className="font-normal cursor-pointer">
-                  Sim
-                </Label>
-              </div>
-            </RadioGroup>
-          </div>
-        </div>
-      ),
-    },
-    {
-      title: "Histórico Familiar",
-      description: "Informações sobre sua família",
-      content: (
-        <div className="space-y-6">
-          <div>
-            <Label className="text-base font-semibold mb-3 block">Casos de Diabetes na família?</Label>
-            <RadioGroup value={formData.familyDiabetes} onValueChange={(v) => handleInputChange("familyDiabetes", v)}>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="no" id="diabetes_no" />
-                <Label htmlFor="diabetes_no" className="font-normal cursor-pointer">
-                  Não
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="2nd_degree" id="diabetes_2nd" />
-                <Label htmlFor="diabetes_2nd" className="font-normal cursor-pointer">
-                  Sim, parente de 2º grau
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="1st_degree" id="diabetes_1st" />
-                <Label htmlFor="diabetes_1st" className="font-normal cursor-pointer">
-                  Sim, parente de 1º grau
-                </Label>
-              </div>
-            </RadioGroup>
-          </div>
-
-          <div>
-            <Label className="text-base font-semibold mb-3 block">Casos de problemas de Tireoide?</Label>
-            <RadioGroup value={formData.familyThyroidIssues} onValueChange={(v) => handleInputChange("familyThyroidIssues", v)}>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="no" id="thyroid_no" />
-                <Label htmlFor="thyroid_no" className="font-normal cursor-pointer">
-                  Não
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="yes" id="thyroid_yes" />
-                <Label htmlFor="thyroid_yes" className="font-normal cursor-pointer">
-                  Sim
-                </Label>
-              </div>
-            </RadioGroup>
-          </div>
-
-          <div>
-            <Label className="text-base font-semibold mb-3 block">Casos de Obesidade?</Label>
-            <RadioGroup value={formData.familyObesity} onValueChange={(v) => handleInputChange("familyObesity", v)}>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="no" id="obesity_no" />
-                <Label htmlFor="obesity_no" className="font-normal cursor-pointer">
-                  Não
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="yes" id="obesity_yes" />
-                <Label htmlFor="obesity_yes" className="font-normal cursor-pointer">
-                  Sim
-                </Label>
-              </div>
-            </RadioGroup>
-          </div>
-        </div>
-      ),
-    },
-  ];
-
   if (submitted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md border-green-200 bg-white shadow-lg">
-          <CardContent className="pt-12 pb-12 text-center">
-            <CheckCircle2 className="w-16 h-16 text-green-600 mx-auto mb-6" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Pesquisa Enviada!</h2>
-            <p className="text-gray-600 mb-6">Obrigado por participar da pesquisa sobre saúde endócrina. Seus dados foram registrados com sucesso.</p>
-            <Button onClick={() => window.location.reload()} className="w-full">
-              Enviar Outra Pesquisa
-            </Button>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+        <Card className="w-full max-w-md shadow-lg">
+          <CardContent className="pt-8 text-center">
+            <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold mb-2">Obrigado!</h2>
+            <p className="text-gray-600 mb-4">Sua pesquisa foi salva com sucesso.</p>
+            <p className="text-sm text-gray-500">Redirecionando...</p>
           </CardContent>
         </Card>
       </div>
     );
   }
 
+  const section = sections[currentSection];
+  const isLastSection = currentSection === sections.length - 1;
+  const isFirstSection = currentSection === 0;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 py-8">
       <div className="max-w-2xl mx-auto">
+        {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">EndocriCheck</h1>
-          <p className="text-lg text-gray-600">Pesquisa sobre Saúde Endócrina</p>
-          {showQRCode && (
-            <div className="mt-6 flex justify-center">
-              <Card className="p-6 bg-white shadow-lg">
-                <QRCode value={window.location.href} size={256} level="H" includeMargin={true} />
-                <p className="text-sm text-gray-600 mt-4 text-center">Escaneie para compartilhar este formulário</p>
-              </Card>
-            </div>
-          )}
-          <Button variant="outline" onClick={() => setShowQRCode(!showQRCode)} className="mt-4">
-            {showQRCode ? "Ocultar" : "Mostrar"} QR Code
-          </Button>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">EndocriCheck</h1>
+          <p className="text-gray-600">Pesquisa sobre Saúde Endócrina</p>
         </div>
 
-        <div className="mb-8">
-          <div className="flex justify-between items-center mb-4">
-            {sections.map((_, idx) => (
-              <div
-                key={idx}
-                className={`h-2 flex-1 mx-1 rounded-full transition-colors ${
-                  idx <= currentSection ? "bg-blue-600" : "bg-gray-200"
-                }`}
-              />
-            ))}
+        {/* Progress Bar */}
+        <div className="mb-6">
+          <div className="flex justify-between text-sm text-gray-600 mb-2">
+            <span>Seção {currentSection + 1} de {sections.length}</span>
+            <span>{Math.round(((currentSection + 1) / sections.length) * 100)}%</span>
           </div>
-          <p className="text-sm text-gray-600 text-center">
-            Seção {currentSection + 1} de {sections.length}
-          </p>
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div
+              className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${((currentSection + 1) / sections.length) * 100}%` }}
+            />
+          </div>
         </div>
 
-        <Card className="bg-white shadow-lg border-0 mb-8">
-          <CardHeader>
-            <CardTitle className="text-2xl">{sections[currentSection].title}</CardTitle>
-            <CardDescription className="text-base">{sections[currentSection].description}</CardDescription>
+        {/* Form Card */}
+        <Card className="shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-t-lg">
+            <CardTitle className="text-2xl">{section.title}</CardTitle>
+            <p className="text-blue-100 mt-2">{section.description}</p>
           </CardHeader>
-          <CardContent>{sections[currentSection].content}</CardContent>
+
+          <CardContent className="pt-8">
+            <div className="space-y-6">
+              {/* Seção 1: Informações Básicas */}
+              {currentSection === 0 && (
+                <>
+                  <div>
+                    <Label className="text-base font-semibold mb-2 block">
+                      Seu nome (opcional)
+                    </Label>
+                    <Input
+                      placeholder="Deixe em branco se preferir responder anonimamente"
+                      value={formData.participantName}
+                      onChange={(e) => handleInputChange("participantName", e.target.value)}
+                      className="text-lg"
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-base font-semibold mb-2 block">Idade *</Label>
+                    <Input
+                      type="number"
+                      placeholder="Ex: 25"
+                      value={formData.age}
+                      onChange={(e) => handleInputChange("age", e.target.value)}
+                      className="text-lg"
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-base font-semibold mb-3 block">Gênero *</Label>
+                    <RadioGroup value={formData.gender} onValueChange={(value) => handleInputChange("gender", value)}>
+                      <div className="flex items-center space-x-2 mb-2">
+                        <RadioGroupItem value="male" id="male" />
+                        <Label htmlFor="male" className="font-normal cursor-pointer">Masculino</Label>
+                      </div>
+                      <div className="flex items-center space-x-2 mb-2">
+                        <RadioGroupItem value="female" id="female" />
+                        <Label htmlFor="female" className="font-normal cursor-pointer">Feminino</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="other" id="other" />
+                        <Label htmlFor="other" className="font-normal cursor-pointer">Outro</Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-base font-semibold mb-2 block">Peso (kg) *</Label>
+                      <Input
+                        type="number"
+                        placeholder="Ex: 70"
+                        value={formData.weight}
+                        onChange={(e) => handleInputChange("weight", e.target.value)}
+                        className="text-lg"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-base font-semibold mb-2 block">Altura (cm) *</Label>
+                      <Input
+                        type="number"
+                        placeholder="Ex: 175"
+                        value={formData.height}
+                        onChange={(e) => handleInputChange("height", e.target.value)}
+                        className="text-lg"
+                      />
+                    </div>
+                  </div>
+
+                  {bmi && (
+                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                      <p className="text-sm text-gray-600">Seu IMC: <span className="font-bold text-lg text-blue-600">{bmi}</span></p>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Seção 2: Hábitos Alimentares */}
+              {currentSection === 1 && (
+                <>
+                  <div>
+                    <Label className="text-base font-semibold mb-3 block">Com que frequência você consome alimentos ultraprocessados?</Label>
+                    <Select value={formData.ultraProcessedFreq} onValueChange={(value) => handleInputChange("ultraProcessedFreq", value)}>
+                      <SelectTrigger className="text-base">
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="never">Nunca</SelectItem>
+                        <SelectItem value="rarely">Raramente</SelectItem>
+                        <SelectItem value="sometimes">Às vezes</SelectItem>
+                        <SelectItem value="frequently">Frequentemente</SelectItem>
+                        <SelectItem value="always">Sempre</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label className="text-base font-semibold mb-3 block">Com que frequência você consome frutas e vegetais?</Label>
+                    <Select value={formData.fruitsVegetablesFreq} onValueChange={(value) => handleInputChange("fruitsVegetablesFreq", value)}>
+                      <SelectTrigger className="text-base">
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="never">Nunca</SelectItem>
+                        <SelectItem value="rarely">Raramente</SelectItem>
+                        <SelectItem value="sometimes">Às vezes</SelectItem>
+                        <SelectItem value="frequently">Frequentemente</SelectItem>
+                        <SelectItem value="always">Sempre</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label className="text-base font-semibold mb-3 block">Com que frequência você consome doces e açúcar?</Label>
+                    <Select value={formData.sweetsFreq} onValueChange={(value) => handleInputChange("sweetsFreq", value)}>
+                      <SelectTrigger className="text-base">
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="never">Nunca</SelectItem>
+                        <SelectItem value="rarely">Raramente</SelectItem>
+                        <SelectItem value="sometimes">Às vezes</SelectItem>
+                        <SelectItem value="frequently">Frequentemente</SelectItem>
+                        <SelectItem value="always">Sempre</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label className="text-base font-semibold mb-2 block">Quantas refeições por dia?</Label>
+                    <Input
+                      type="number"
+                      placeholder="Ex: 3"
+                      value={formData.mealsPerDay}
+                      onChange={(e) => handleInputChange("mealsPerDay", e.target.value)}
+                      className="text-lg"
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-base font-semibold mb-2 block">Quantos litros de água por dia?</Label>
+                    <Input
+                      type="number"
+                      placeholder="Ex: 2"
+                      value={formData.waterLitersPerDay}
+                      onChange={(e) => handleInputChange("waterLitersPerDay", e.target.value)}
+                      className="text-lg"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Seção 3: Estilo de Vida */}
+              {currentSection === 2 && (
+                <>
+                  <div>
+                    <Label className="text-base font-semibold mb-2 block">Horas de atividade física por semana?</Label>
+                    <Input
+                      type="number"
+                      placeholder="Ex: 5"
+                      value={formData.physicalActivityHours}
+                      onChange={(e) => handleInputChange("physicalActivityHours", e.target.value)}
+                      className="text-lg"
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-base font-semibold mb-3 block">Você fuma?</Label>
+                    <RadioGroup value={formData.smokingStatus} onValueChange={(value) => handleInputChange("smokingStatus", value)}>
+                      <div className="flex items-center space-x-2 mb-2">
+                        <RadioGroupItem value="never" id="smoke-never" />
+                        <Label htmlFor="smoke-never" className="font-normal cursor-pointer">Nunca fumei</Label>
+                      </div>
+                      <div className="flex items-center space-x-2 mb-2">
+                        <RadioGroupItem value="former" id="smoke-former" />
+                        <Label htmlFor="smoke-former" className="font-normal cursor-pointer">Fumava, mas parei</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="current" id="smoke-current" />
+                        <Label htmlFor="smoke-current" className="font-normal cursor-pointer">Fumo atualmente</Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+
+                  <div>
+                    <Label className="text-base font-semibold mb-3 block">Com que frequência você consome álcool?</Label>
+                    <Select value={formData.alcoholFrequency} onValueChange={(value) => handleInputChange("alcoholFrequency", value)}>
+                      <SelectTrigger className="text-base">
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="never">Nunca</SelectItem>
+                        <SelectItem value="rarely">Raramente</SelectItem>
+                        <SelectItem value="sometimes">Às vezes</SelectItem>
+                        <SelectItem value="frequently">Frequentemente</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label className="text-base font-semibold mb-3 block">Como é a qualidade do seu sono?</Label>
+                    <RadioGroup value={formData.sleepQuality} onValueChange={(value) => handleInputChange("sleepQuality", value)}>
+                      <div className="flex items-center space-x-2 mb-2">
+                        <RadioGroupItem value="poor" id="sleep-poor" />
+                        <Label htmlFor="sleep-poor" className="font-normal cursor-pointer">Ruim</Label>
+                      </div>
+                      <div className="flex items-center space-x-2 mb-2">
+                        <RadioGroupItem value="fair" id="sleep-fair" />
+                        <Label htmlFor="sleep-fair" className="font-normal cursor-pointer">Regular</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="good" id="sleep-good" />
+                        <Label htmlFor="sleep-good" className="font-normal cursor-pointer">Bom</Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+                </>
+              )}
+
+              {/* Seção 4: Sintomas */}
+              {currentSection === 3 && (
+                <>
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="fatigue"
+                        checked={formData.symptomFatigue}
+                        onCheckedChange={(checked) => handleCheckboxChange("symptomFatigue", checked as boolean)}
+                      />
+                      <Label htmlFor="fatigue" className="font-normal cursor-pointer">Cansaço ou fadiga</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="weight"
+                        checked={formData.symptomWeightChange}
+                        onCheckedChange={(checked) => handleCheckboxChange("symptomWeightChange", checked as boolean)}
+                      />
+                      <Label htmlFor="weight" className="font-normal cursor-pointer">Mudanças no peso</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="thirst"
+                        checked={formData.symptomExcessiveThirst}
+                        onCheckedChange={(checked) => handleCheckboxChange("symptomExcessiveThirst", checked as boolean)}
+                      />
+                      <Label htmlFor="thirst" className="font-normal cursor-pointer">Sede excessiva</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="temperature"
+                        checked={formData.symptomTemperatureSensitivity}
+                        onCheckedChange={(checked) => handleCheckboxChange("symptomTemperatureSensitivity", checked as boolean)}
+                      />
+                      <Label htmlFor="temperature" className="font-normal cursor-pointer">Sensibilidade à temperatura</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="skin"
+                        checked={formData.symptomDrySkin}
+                        onCheckedChange={(checked) => handleCheckboxChange("symptomDrySkin", checked as boolean)}
+                      />
+                      <Label htmlFor="skin" className="font-normal cursor-pointer">Pele seca</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="mood"
+                        checked={formData.symptomMoodChanges}
+                        onCheckedChange={(checked) => handleCheckboxChange("symptomMoodChanges", checked as boolean)}
+                      />
+                      <Label htmlFor="mood" className="font-normal cursor-pointer">Mudanças de humor</Label>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label className="text-base font-semibold mb-3 block">Você toma medicação para pressão alta?</Label>
+                    <RadioGroup value={formData.bloodPressureMedication} onValueChange={(value) => handleInputChange("bloodPressureMedication", value)}>
+                      <div className="flex items-center space-x-2 mb-2">
+                        <RadioGroupItem value="no" id="bp-no" />
+                        <Label htmlFor="bp-no" className="font-normal cursor-pointer">Não</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="yes" id="bp-yes" />
+                        <Label htmlFor="bp-yes" className="font-normal cursor-pointer">Sim</Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+                </>
+              )}
+
+              {/* Seção 5: Histórico Familiar */}
+              {currentSection === 4 && (
+                <>
+                  <div>
+                    <Label className="text-base font-semibold mb-3 block">Alguém na sua família tem diabetes?</Label>
+                    <RadioGroup value={formData.familyDiabetes} onValueChange={(value) => handleInputChange("familyDiabetes", value)}>
+                      <div className="flex items-center space-x-2 mb-2">
+                        <RadioGroupItem value="no" id="diabetes-no" />
+                        <Label htmlFor="diabetes-no" className="font-normal cursor-pointer">Não</Label>
+                      </div>
+                      <div className="flex items-center space-x-2 mb-2">
+                        <RadioGroupItem value="yes" id="diabetes-yes" />
+                        <Label htmlFor="diabetes-yes" className="font-normal cursor-pointer">Sim</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="unsure" id="diabetes-unsure" />
+                        <Label htmlFor="diabetes-unsure" className="font-normal cursor-pointer">Não tenho certeza</Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+
+                  <div>
+                    <Label className="text-base font-semibold mb-3 block">Alguém na sua família tem problemas de tireoide?</Label>
+                    <RadioGroup value={formData.familyThyroidIssues} onValueChange={(value) => handleInputChange("familyThyroidIssues", value)}>
+                      <div className="flex items-center space-x-2 mb-2">
+                        <RadioGroupItem value="no" id="thyroid-no" />
+                        <Label htmlFor="thyroid-no" className="font-normal cursor-pointer">Não</Label>
+                      </div>
+                      <div className="flex items-center space-x-2 mb-2">
+                        <RadioGroupItem value="yes" id="thyroid-yes" />
+                        <Label htmlFor="thyroid-yes" className="font-normal cursor-pointer">Sim</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="unsure" id="thyroid-unsure" />
+                        <Label htmlFor="thyroid-unsure" className="font-normal cursor-pointer">Não tenho certeza</Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+
+                  <div>
+                    <Label className="text-base font-semibold mb-3 block">Alguém na sua família tem obesidade?</Label>
+                    <RadioGroup value={formData.familyObesity} onValueChange={(value) => handleInputChange("familyObesity", value)}>
+                      <div className="flex items-center space-x-2 mb-2">
+                        <RadioGroupItem value="no" id="obesity-no" />
+                        <Label htmlFor="obesity-no" className="font-normal cursor-pointer">Não</Label>
+                      </div>
+                      <div className="flex items-center space-x-2 mb-2">
+                        <RadioGroupItem value="yes" id="obesity-yes" />
+                        <Label htmlFor="obesity-yes" className="font-normal cursor-pointer">Sim</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="unsure" id="obesity-unsure" />
+                        <Label htmlFor="obesity-unsure" className="font-normal cursor-pointer">Não tenho certeza</Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+                </>
+              )}
+            </div>
+          </CardContent>
         </Card>
 
-        <div className="flex justify-between gap-4">
+        {/* Navigation Buttons */}
+        <div className="flex gap-4 mt-8">
           <Button
-            variant="outline"
             onClick={() => setCurrentSection(Math.max(0, currentSection - 1))}
-            disabled={currentSection === 0}
-            className="flex-1"
+            disabled={isFirstSection}
+            variant="outline"
+            className="flex-1 py-6 text-base"
           >
+            <ChevronLeft className="w-5 h-5 mr-2" />
             Anterior
           </Button>
 
-          {currentSection === sections.length - 1 ? (
+          {isLastSection ? (
             <Button
               onClick={handleSubmit}
               disabled={submitMutation.isPending}
-              className="flex-1 bg-green-600 hover:bg-green-700"
+              className="flex-1 py-6 text-base bg-green-600 hover:bg-green-700"
             >
               {submitMutation.isPending ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Enviando...
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Salvando...
                 </>
               ) : (
                 "Enviar Pesquisa"
@@ -716,9 +608,10 @@ export default function SurveyForm() {
           ) : (
             <Button
               onClick={() => setCurrentSection(Math.min(sections.length - 1, currentSection + 1))}
-              className="flex-1"
+              className="flex-1 py-6 text-base"
             >
               Próximo
+              <ChevronRight className="w-5 h-5 ml-2" />
             </Button>
           )}
         </div>
