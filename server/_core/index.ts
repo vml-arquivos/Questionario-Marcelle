@@ -7,6 +7,7 @@ import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
+import { getDb } from "../db";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -33,6 +34,25 @@ async function startServer() {
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
+
+  // Run DB migrations eagerly on startup (creates/alters tables as needed)
+  try {
+    await getDb();
+    console.log("[Startup] Database ready");
+  } catch (err) {
+    console.warn("[Startup] DB init warning (non-fatal):", err);
+  }
+
+  // Manual migration trigger endpoint (useful if container restarts without redeploy)
+  app.post("/api/migrate", async (_req, res) => {
+    try {
+      await getDb();
+      res.json({ ok: true, message: "Migrations applied" });
+    } catch (err) {
+      res.status(500).json({ ok: false, error: String(err) });
+    }
+  });
+
   registerStorageProxy(app);
   registerOAuthRoutes(app);
   // tRPC API
