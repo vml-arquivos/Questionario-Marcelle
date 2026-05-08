@@ -58,7 +58,7 @@ export default function Dashboard() {
   const [filterAgeGroup, setFilterAgeGroup] = useState<string>("all");
   const [filterGender, setFilterGender] = useState<string>("all");
 
-  const { data: responses, isLoading, refetch } = trpc.survey.getAll.useQuery();
+  const { data: responses, isLoading, refetch } = trpc.survey.getResponses.useQuery();
 
   // ── Filtro ──────────────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
