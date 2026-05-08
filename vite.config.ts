@@ -1,20 +1,19 @@
-import { jsxLocPlugin } from "@builder.io/vite-plugin-jsx-loc";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import fs from "node:fs";
 import path from "node:path";
 import { defineConfig, type Plugin, type ViteDevServer } from "vite";
-import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
 
 // =============================================================================
 // Manus Debug Collector - Vite Plugin
 // Writes browser logs directly to files, trimmed when exceeding size limit
+// Only active in development — skipped entirely in production builds.
 // =============================================================================
 
 const PROJECT_ROOT = import.meta.dirname;
 const LOG_DIR = path.join(PROJECT_ROOT, ".manus-logs");
 const MAX_LOG_SIZE_BYTES = 1 * 1024 * 1024; // 1MB per log file
-const TRIM_TARGET_BYTES = Math.floor(MAX_LOG_SIZE_BYTES * 0.6); // Trim to 60% to avoid constant re-trimming
+const TRIM_TARGET_BYTES = Math.floor(MAX_LOG_SIZE_BYTES * 0.6);
 
 type LogSource = "browserConsole" | "networkRequests" | "sessionReplay";
 
@@ -34,7 +33,6 @@ function trimLogFile(logPath: string, maxSize: number) {
     const keptLines: string[] = [];
     let keptBytes = 0;
 
-    // Keep newest lines (from end) that fit within 60% of maxSize
     const targetSize = TRIM_TARGET_BYTES;
     for (let i = lines.length - 1; i >= 0; i--) {
       const lineBytes = Buffer.byteLength(`${lines[i]}\n`, "utf-8");
@@ -55,21 +53,17 @@ function writeToLogFile(source: LogSource, entries: unknown[]) {
   ensureLogDir();
   const logPath = path.join(LOG_DIR, `${source}.log`);
 
-  // Format entries with timestamps
   const lines = entries.map((entry) => {
     const ts = new Date().toISOString();
     return `[${ts}] ${JSON.stringify(entry)}`;
   });
 
-  // Append to log file
   fs.appendFileSync(logPath, `${lines.join("\n")}\n`, "utf-8");
-
-  // Trim if exceeds max size
   trimLogFile(logPath, MAX_LOG_SIZE_BYTES);
 }
 
 /**
- * Vite plugin to collect browser debug logs
+ * Vite plugin to collect browser debug logs (development only).
  * - POST /__manus__/logs: Browser sends logs, written directly to files
  * - Files: browserConsole.log, networkRequests.log, sessionReplay.log
  * - Auto-trimmed when exceeding 1MB (keeps newest entries)
@@ -98,14 +92,12 @@ function vitePluginManusDebugCollector(): Plugin {
     },
 
     configureServer(server: ViteDevServer) {
-      // POST /__manus__/logs: Browser sends logs (written directly to files)
       server.middlewares.use("/__manus__/logs", (req, res, next) => {
         if (req.method !== "POST") {
           return next();
         }
 
         const handlePayload = (payload: any) => {
-          // Write logs directly to files
           if (payload.consoleLogs?.length > 0) {
             writeToLogFile("browserConsole", payload.consoleLogs);
           }
@@ -150,7 +142,20 @@ function vitePluginManusDebugCollector(): Plugin {
   };
 }
 
-const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector()];
+const isProduction = process.env.NODE_ENV === "production";
+
+// Base plugins always active (needed for the vite build step itself)
+const plugins: Plugin[] = [react(), tailwindcss()];
+
+// Dev-only plugins: jsxLocPlugin and vitePluginManusRuntime are devDependencies
+// that must NOT be loaded during the vite build that runs inside Docker (production),
+// because they won't be present when the runtime image starts.
+// They are only useful in the local dev server (NODE_ENV=development).
+if (!isProduction) {
+  const { jsxLocPlugin } = await import("@builder.io/vite-plugin-jsx-loc");
+  const { vitePluginManusRuntime } = await import("vite-plugin-manus-runtime");
+  plugins.push(jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector());
+}
 
 export default defineConfig({
   plugins,
