@@ -84,3 +84,13 @@
 - [x] Atualizar COOLIFY_DEPLOY.md
 - [x] Atualizar client/src/pages/Home.tsx
 - [x] Fazer commit com correção de nome
+
+
+## Fase 14: Configuração para Google Cloud Platform (GCP)
+- [ ] Criar arquivo .env completo com todas as variáveis
+- [ ] Criar arquivo .env.production para produção
+- [ ] Criar guia de deploy GCP com Cloud Run
+- [ ] Criar guia de configuração PostgreSQL no Cloud SQL
+- [ ] Criar script de inicialização do banco de dados
+- [ ] Documentar todas as variáveis de ambiente
+- [ ] Fazer commit com configuração GCP
