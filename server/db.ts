@@ -9,17 +9,44 @@ import {
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
+let _pool: Pool | null = null;
 let _db: ReturnType<typeof drizzle> | null = null;
-let _migrated = false;
+
+export function getPool(): Pool {
+  if (!_pool) {
+    if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL not set");
+    _pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  }
+  return _pool;
+}
+
+// Lazily create the drizzle instance so local tooling can run without a DB.
+export async function getDb() {
+  if (!_db && process.env.DATABASE_URL) {
+    try {
+      _db = drizzle(getPool());
+    } catch (error) {
+      console.warn("[Database] Failed to connect:", error);
+      _db = null;
+    }
+  }
+  return _db;
+}
 
 /**
- * Runs all schema migrations inline using raw SQL with IF NOT EXISTS guards.
- * This approach is container-safe and does not depend on migration files on disk.
+ * Runs all schema migrations using raw pg client with IF NOT EXISTS guards.
+ * This is container-safe and does not depend on migration files on disk.
+ * Can be called multiple times safely.
  */
-async function runInlineMigrations(db: ReturnType<typeof drizzle>) {
-  const statements = [
-    // ── Initial table (idempotent) ─────────────────────────────────────────
-    `CREATE TABLE IF NOT EXISTS "survey_responses" (
+export async function runMigrations(): Promise<{ applied: string[]; warnings: string[] }> {
+  const pool = getPool();
+  const client = await pool.connect();
+  const applied: string[] = [];
+  const warnings: string[] = [];
+
+  try {
+    // ── Initial table ─────────────────────────────────────────────────────
+    await client.query(`CREATE TABLE IF NOT EXISTS "survey_responses" (
       "id" integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
       "userType" varchar(50) NOT NULL,
       "age" integer NOT NULL,
@@ -52,37 +79,55 @@ async function runInlineMigrations(db: ReturnType<typeof drizzle>) {
       "submittedAt" timestamp DEFAULT now() NOT NULL,
       "ipAddress" varchar(45),
       "userAgent" text
-    )`,
-    // ── Survey enrichment columns (Parte 2) ───────────────────────────────
-    `ALTER TABLE "survey_responses" ADD COLUMN IF NOT EXISTS "existingDiagnosis" varchar(100)`,
-    `ALTER TABLE "survey_responses" ADD COLUMN IF NOT EXISTS "onMedication" varchar(10)`,
-    `ALTER TABLE "survey_responses" ADD COLUMN IF NOT EXISTS "sugaryDrinksFrequency" varchar(20)`,
-    `ALTER TABLE "survey_responses" ADD COLUMN IF NOT EXISTS "fastFoodFrequency" varchar(20)`,
-    `ALTER TABLE "survey_responses" ADD COLUMN IF NOT EXISTS "breakfastFrequency" varchar(20)`,
-    `ALTER TABLE "survey_responses" ADD COLUMN IF NOT EXISTS "lateNightEating" varchar(10)`,
-    `ALTER TABLE "survey_responses" ADD COLUMN IF NOT EXISTS "dietType" varchar(30)`,
-    `ALTER TABLE "survey_responses" ADD COLUMN IF NOT EXISTS "screenTimeHours" varchar(20)`,
-    `ALTER TABLE "survey_responses" ADD COLUMN IF NOT EXISTS "socialMediaHours" varchar(20)`,
-    `ALTER TABLE "survey_responses" ADD COLUMN IF NOT EXISTS "sleepHoursPerNight" varchar(20)`,
-    `ALTER TABLE "survey_responses" ADD COLUMN IF NOT EXISTS "wakeUpTired" varchar(10)`,
-    `ALTER TABLE "survey_responses" ADD COLUMN IF NOT EXISTS "sleepLatency" varchar(20)`,
-    `ALTER TABLE "survey_responses" ADD COLUMN IF NOT EXISTS "stressLevel" varchar(20)`,
-    `ALTER TABLE "survey_responses" ADD COLUMN IF NOT EXISTS "anxietyFrequency" varchar(20)`,
-    `ALTER TABLE "survey_responses" ADD COLUMN IF NOT EXISTS "mentalHealthDiagnosis" varchar(10)`,
-    `ALTER TABLE "survey_responses" ADD COLUMN IF NOT EXISTS "symptomHairLoss" integer`,
-    `ALTER TABLE "survey_responses" ADD COLUMN IF NOT EXISTS "symptomBrainFog" integer`,
-    `ALTER TABLE "survey_responses" ADD COLUMN IF NOT EXISTS "symptomConstantHunger" integer`,
-    `ALTER TABLE "survey_responses" ADD COLUMN IF NOT EXISTS "symptomFrequentUrination" integer`,
-    `ALTER TABLE "survey_responses" ADD COLUMN IF NOT EXISTS "symptomPalpitations" integer`,
-    `ALTER TABLE "survey_responses" ADD COLUMN IF NOT EXISTS "irregularMenstrualCycle" varchar(10)`,
-    `ALTER TABLE "survey_responses" ADD COLUMN IF NOT EXISTS "pcosDiagnosis" varchar(10)`,
-    // ── Users table (idempotent) ───────────────────────────────────────────
-    `DO $$ BEGIN
+    )`);
+    applied.push("survey_responses table");
+
+    // ── Enrichment columns ────────────────────────────────────────────────
+    const newCols: [string, string][] = [
+      ["existingDiagnosis",       "varchar(100)"],
+      ["onMedication",            "varchar(10)"],
+      ["sugaryDrinksFrequency",   "varchar(20)"],
+      ["fastFoodFrequency",       "varchar(20)"],
+      ["breakfastFrequency",      "varchar(20)"],
+      ["lateNightEating",         "varchar(10)"],
+      ["dietType",                "varchar(30)"],
+      ["screenTimeHours",         "varchar(20)"],
+      ["socialMediaHours",        "varchar(20)"],
+      ["sleepHoursPerNight",      "varchar(20)"],
+      ["wakeUpTired",             "varchar(10)"],
+      ["sleepLatency",            "varchar(20)"],
+      ["stressLevel",             "varchar(20)"],
+      ["anxietyFrequency",        "varchar(20)"],
+      ["mentalHealthDiagnosis",   "varchar(10)"],
+      ["symptomHairLoss",         "integer"],
+      ["symptomBrainFog",         "integer"],
+      ["symptomConstantHunger",   "integer"],
+      ["symptomFrequentUrination","integer"],
+      ["symptomPalpitations",     "integer"],
+      ["irregularMenstrualCycle", "varchar(10)"],
+      ["pcosDiagnosis",           "varchar(10)"],
+    ];
+
+    for (const [col, type] of newCols) {
+      try {
+        await client.query(
+          `ALTER TABLE "survey_responses" ADD COLUMN IF NOT EXISTS "${col}" ${type}`
+        );
+        applied.push(`column: ${col}`);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        warnings.push(`${col}: ${msg}`);
+      }
+    }
+
+    // ── Users table ───────────────────────────────────────────────────────
+    await client.query(`DO $$ BEGIN
       IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
         CREATE TYPE user_role AS ENUM ('user', 'admin');
       END IF;
-    END $$`,
-    `CREATE TABLE IF NOT EXISTS "users" (
+    END $$`);
+
+    await client.query(`CREATE TABLE IF NOT EXISTS "users" (
       "id" integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
       "openId" varchar(64) NOT NULL UNIQUE,
       "name" text,
@@ -92,40 +137,18 @@ async function runInlineMigrations(db: ReturnType<typeof drizzle>) {
       "createdAt" timestamp DEFAULT now() NOT NULL,
       "updatedAt" timestamp DEFAULT now() NOT NULL,
       "lastSignedIn" timestamp DEFAULT now() NOT NULL
-    )`,
-  ];
+    )`);
+    applied.push("users table");
 
-  for (const stmt of statements) {
-    try {
-      await db.execute(sql.raw(stmt));
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      // Ignore "already exists" errors — they are expected on re-runs
-      if (!msg.includes("already exists") && !msg.includes("duplicate")) {
-        console.warn("[Migration] Non-fatal warning:", msg.substring(0, 200));
-      }
+    console.log("[Migration] Applied:", applied.join(", "));
+    if (warnings.length > 0) {
+      console.warn("[Migration] Warnings:", warnings.join("; "));
     }
+  } finally {
+    client.release();
   }
-  console.log("[Database] Inline migrations complete");
-}
 
-// Lazily create the drizzle instance so local tooling can run without a DB.
-export async function getDb() {
-  if (!_db && process.env.DATABASE_URL) {
-    try {
-      const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-      _db = drizzle(pool);
-    } catch (error) {
-      console.warn("[Database] Failed to connect:", error);
-      _db = null;
-    }
-  }
-  // Run migrations once after connection is established
-  if (_db && !_migrated) {
-    _migrated = true; // Set early to prevent concurrent runs
-    await runInlineMigrations(_db);
-  }
-  return _db;
+  return { applied, warnings };
 }
 
 export async function upsertUser(user: InsertUser): Promise<void> {
@@ -176,7 +199,6 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       updateSet.lastSignedIn = new Date();
     }
 
-    // PostgreSQL upsert — uses onConflictDoUpdate instead of MySQL's onDuplicateKeyUpdate
     await db
       .insert(users)
       .values(values)
@@ -252,5 +274,3 @@ export async function getSurveyResponseCount() {
     throw error;
   }
 }
-
-// TODO: add feature queries here as your schema grows.
