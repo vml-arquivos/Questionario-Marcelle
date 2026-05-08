@@ -83,4 +83,4 @@
 - [x] Atualizar README.md
 - [x] Atualizar COOLIFY_DEPLOY.md
 - [x] Atualizar client/src/pages/Home.tsx
-- [ ] Fazer commit com correção de nome
+- [x] Fazer commit com correção de nome
