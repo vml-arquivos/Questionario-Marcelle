@@ -105,7 +105,7 @@ export default function Home() {
       <footer className="bg-gray-900 text-gray-300 py-8 mt-16">
         <div className="max-w-7xl mx-auto px-4 text-center">
           <p>EndocriCheck © 2026 - Sistema de Pesquisa sobre Saúde Endócrina</p>
-          <p className="text-sm mt-2">Desenvolvido para pesquisa acadêmica</p>
+          <p className="text-sm mt-2">Pesquisadora: Marcelle Victoria Alves de Lima (1º F)</p>
         </div>
       </footer>
     </div>

@@ -76,3 +76,11 @@
 - [x] Adicionar dados de Marcelle Victoria Alves de Lima
 - [x] Configurar identificação do projeto
 - [x] Fazer commit final com identificação
+
+
+## Fase 13: Correção de Informações
+- [x] Corrigir nome do pesquisador para "Marcelle Victoria Alves de Lima (1º F)"
+- [x] Atualizar README.md
+- [x] Atualizar COOLIFY_DEPLOY.md
+- [x] Atualizar client/src/pages/Home.tsx
+- [ ] Fazer commit com correção de nome
