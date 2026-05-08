@@ -48,7 +48,8 @@ async function startServer() {
     const { setupVite } = await import("./vite");
     await setupVite(app, server);
   } else {
-    const { serveStatic } = await import("./vite");
+    // Import from ./static to avoid pulling vite and its dev-only plugins
+    const { serveStatic } = await import("./static");
     serveStatic(app);
   }
 
