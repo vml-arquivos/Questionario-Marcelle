@@ -23,6 +23,9 @@ FROM node:22-alpine
 
 WORKDIR /app
 
+# Install curl for healthcheck
+RUN apk add --no-cache curl
+
 # Install pnpm
 RUN npm install -g pnpm
 
@@ -36,12 +39,12 @@ RUN pnpm install --prod --frozen-lockfile
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/drizzle ./drizzle
 
-# Expose port
-EXPOSE 4000
+# Expose port (matches default PORT=3000 in server)
+EXPOSE 3000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:4000', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
+# Health check - uses PORT env var with fallback to 3000
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+  CMD curl -f http://localhost:${PORT:-3000}/ || exit 1
 
 # Start the application
 CMD ["node", "dist/index.js"]

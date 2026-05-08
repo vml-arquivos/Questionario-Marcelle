@@ -3,15 +3,19 @@ import fs from "fs";
 import { type Server } from "http";
 import { nanoid } from "nanoid";
 import path from "path";
-import { createServer as createViteServer } from "vite";
-// NOTE: Do NOT import vite.config.ts here.
-// It has static top-level imports of @tailwindcss/vite, @vitejs/plugin-react,
-// etc. which are devDependencies. esbuild externalises them, so they end up
-// as unresolvable requires in dist/index.js when the production image runs
-// with only prod deps installed. Instead, tell Vite where the config file is
-// on disk and let Vite load it in its own process (dev only).
+// NOTE: Do NOT use a static top-level import for 'vite' here.
+// esbuild with --packages=external still emits a top-level `import ... from "vite"`
+// in dist/index.js. Node.js resolves ALL top-level imports before executing any code,
+// so even though the call is guarded by `if (NODE_ENV === "development")`, the
+// production container (which has no vite installed) crashes immediately with
+// ERR_MODULE_NOT_FOUND. Using a dynamic import() defers the resolution to runtime,
+// only when this function is actually called (dev mode only).
 
 export async function setupVite(app: Express, server: Server) {
+  // Dynamic import ensures vite is only resolved at runtime in dev mode,
+  // never bundled as a static top-level import that would break production.
+  const { createServer: createViteServer } = await import("vite");
+
   const vite = await createViteServer({
     // Point Vite to the config file on disk. Vite loads it in its own context,
     // so devDependency imports inside vite.config.ts never touch this bundle.
