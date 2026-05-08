@@ -1,0 +1,284 @@
+================================================================================
+VARIÁVEIS DE AMBIENTE - COOLIFY DEPLOYMENT
+EndocriCheck - Pesquisa sobre Saúde Endócrina
+Pesquisador: Marcelle Vitória Alves de Lima (1º F)
+Domínio: pesquisa.permupay.com.br
+Porta: 4000
+================================================================================
+
+COPIE E COLE ESTAS VARIÁVEIS NO COOLIFY:
+
+================================================================================
+1. BANCO DE DADOS (PostgreSQL 17)
+================================================================================
+
+DATABASE_URL=postgresql://endocrine_user:SUA_SENHA_AQUI@localhost:5432/endocrine_survey
+
+INSTRUÇÕES:
+- Substitua "SUA_SENHA_AQUI" pela senha que você definiu no PostgreSQL
+- Mantenha o restante exatamente como está
+- Use "localhost" se PostgreSQL está na mesma VPS
+- Use o IP interno se PostgreSQL está em outro servidor
+
+Exemplo preenchido:
+DATABASE_URL=postgresql://endocrine_user:MinhaSenh@Segura123@localhost:5432/endocrine_survey
+
+================================================================================
+2. AMBIENTE
+================================================================================
+
+NODE_ENV=production
+
+================================================================================
+3. TÍTULO DA APLICAÇÃO
+================================================================================
+
+VITE_APP_TITLE=EndocriCheck - Pesquisa Endocrinológica
+
+================================================================================
+4. CHAVE DE SESSÃO (GERADA COM OPENSSL)
+================================================================================
+
+SESSION_SECRET=ack6IEOF2Z35B5Cp7FVkWUwrs9d4Rn4cL6tE+gr7JiY=
+
+NOTA: Esta chave foi gerada com: openssl rand -base64 32
+
+================================================================================
+5. DOMÍNIO DA APLICAÇÃO
+================================================================================
+
+VITE_APP_DOMAIN=https://pesquisa.permupay.com.br
+
+================================================================================
+6. PORTA
+================================================================================
+
+PORT=4000
+
+NOTA: Você pediu porta 4000 (ou 5000). Usando 4000.
+
+================================================================================
+7. HOST
+================================================================================
+
+HOST=0.0.0.0
+
+NOTA: Não altere este valor
+
+================================================================================
+8. LOGGING
+================================================================================
+
+LOG_LEVEL=info
+
+NOTA: Define o nível de detalhamento dos logs
+
+================================================================================
+RESUMO COMPLETO PARA COPIAR E COLAR
+================================================================================
+
+Copie exatamente isto e cole no Coolify:
+
+DATABASE_URL=postgresql://endocrine_user:SUA_SENHA_AQUI@localhost:5432/endocrine_survey
+NODE_ENV=production
+VITE_APP_TITLE=EndocriCheck - Pesquisa Endocrinológica
+SESSION_SECRET=ack6IEOF2Z35B5Cp7FVkWUwrs9d4Rn4cL6tE+gr7JiY=
+VITE_APP_DOMAIN=https://pesquisa.permupay.com.br
+PORT=4000
+HOST=0.0.0.0
+LOG_LEVEL=info
+
+================================================================================
+PASSO A PASSO NO COOLIFY
+================================================================================
+
+1. Acesse o Coolify Dashboard
+2. Selecione a aplicação "EndocriCheck" ou "Questionario-Marcelle"
+3. Vá para "Variáveis de Ambiente" ou "Environment Variables"
+4. Clique em "Adicionar Variável" ou "Add Variable"
+5. Para cada linha acima:
+   - Nome: (ex: DATABASE_URL)
+   - Valor: (ex: postgresql://...)
+   - Clique em "Adicionar" ou "Add"
+6. Clique em "Salvar" ou "Save"
+7. Clique em "Deploy" ou "Redeploy"
+
+================================================================================
+AUTENTICAÇÃO LOCAL
+================================================================================
+
+Usuário padrão: admin
+Senha padrão: admin123
+
+⚠️ IMPORTANTE: Altere a senha após o primeiro login!
+
+================================================================================
+ACESSAR A APLICAÇÃO
+================================================================================
+
+Após o deploy estar completo:
+
+1. Formulário Público: https://pesquisa.permupay.com.br/survey
+2. Dashboard Admin: https://pesquisa.permupay.com.br/dashboard
+3. Home: https://pesquisa.permupay.com.br/
+
+Login no Dashboard:
+- Usuário: admin
+- Senha: admin123 (altere após primeiro login!)
+
+================================================================================
+MIGRATIONS DO BANCO DE DADOS
+================================================================================
+
+As migrations são executadas automaticamente no primeiro deploy.
+
+Se precisar executar manualmente dentro do container:
+
+docker exec seu-container pnpm drizzle-kit migrate
+
+Ou se estiver dentro do container:
+
+pnpm drizzle-kit migrate
+
+================================================================================
+VERIFICAR LOGS
+================================================================================
+
+Para ver os logs em tempo real:
+
+docker logs -f seu-container
+
+Para ver as últimas 100 linhas:
+
+docker logs --tail 100 seu-container
+
+================================================================================
+CONECTAR AO BANCO DE DADOS
+================================================================================
+
+Para conectar ao PostgreSQL e verificar os dados:
+
+psql -h localhost -U endocrine_user -d endocrine_survey
+
+Ou se tiver psql instalado:
+
+psql "postgresql://endocrine_user:SUA_SENHA@localhost:5432/endocrine_survey"
+
+Comandos úteis no psql:
+- \dt = listar tabelas
+- SELECT COUNT(*) FROM survey_responses; = contar respostas
+- \q = sair
+
+================================================================================
+ESTRUTURA DO PROJETO
+================================================================================
+
+endocrine-survey-system/
+├── client/                    # Frontend React 19
+│   ├── src/
+│   │   ├── pages/
+│   │   │   ├── Home.tsx       # Página inicial
+│   │   │   ├── SurveyForm.tsx # Formulário público
+│   │   │   └── Dashboard.tsx  # Dashboard administrativo
+│   │   ├── App.tsx
+│   │   └── index.css
+│   └── public/
+├── server/                    # Backend Express
+│   ├── routers.ts             # Rotas e lógica
+│   ├── db.ts                  # Queries do banco
+│   ├── auth.ts                # Autenticação local
+│   └── tests/                 # Testes
+├── drizzle/                   # Schema PostgreSQL
+│   ├── schema.ts              # Definição das tabelas
+│   └── migrations/            # Migrations SQL
+├── Dockerfile                 # Build Docker
+├── docker-compose.yml         # Compose local
+├── README.md                  # Documentação
+└── package.json               # Dependências
+
+================================================================================
+FUNCIONALIDADES
+================================================================================
+
+✅ Formulário Público
+   - 5 seções (Perfil, Hábitos, Estilo de Vida, Sintomas, Histórico)
+   - Perguntas objetivas sobre endocrinologia
+   - Cálculo automático de IMC
+   - Geração de QR Code
+   - Validação completa
+
+✅ Dashboard Administrativo
+   - Autenticação local
+   - 5 gráficos principais
+   - Tabela com respostas
+   - Exportação CSV
+   - Análise FINDRISC
+
+✅ Banco de Dados
+   - PostgreSQL 17
+   - 32 campos por resposta
+   - Migrations automáticas
+   - Backup ready
+
+✅ Deploy
+   - Docker pronto
+   - Coolify compatible
+   - VPS ready
+   - 100% independente
+
+================================================================================
+TROUBLESHOOTING
+================================================================================
+
+ERRO: "Connection refused" ao banco de dados
+SOLUÇÃO: Verifique se PostgreSQL está rodando e se DATABASE_URL está correto
+
+ERRO: "Port 4000 already in use"
+SOLUÇÃO: Mude a porta no Coolify ou verifique qual processo está usando
+
+ERRO: "Migrations failed"
+SOLUÇÃO: Verifique os logs e execute manualmente dentro do container
+
+ERRO: "Cannot find module"
+SOLUÇÃO: Execute "npm install" ou "pnpm install" dentro do container
+
+================================================================================
+CHECKLIST FINAL
+================================================================================
+
+☐ Variáveis de ambiente configuradas no Coolify
+☐ PostgreSQL 17 criado e rodando
+☐ Dockerfile detectado pelo Coolify
+☐ Deploy iniciado
+☐ Aplicação acessível em https://pesquisa.permupay.com.br
+☐ Formulário funcionando
+☐ Dashboard funcionando
+☐ Dados sendo salvos no banco
+☐ Senha do admin alterada
+☐ Backups configurados
+
+================================================================================
+SUPORTE E DOCUMENTAÇÃO
+================================================================================
+
+Arquivos de documentação no repositório:
+- README.md = Documentação geral
+- COOLIFY_STANDALONE.md = Guia completo de deploy
+- ENV_COOLIFY_ESSENCIAL.txt = Variáveis essenciais
+- ENV_COOLIFY_FINAL.txt = Este arquivo
+
+Repositório GitHub:
+https://github.com/vml-arquivos/Questionario-Marcelle
+
+================================================================================
+TUDO PRONTO PARA DEPLOY!
+================================================================================
+
+Sistema 100% independente
+Sem dependências externas
+Pronto para produção
+Sucesso! 🚀
+
+Data: 2026-05-08
+Versão: 1.0.0
+Status: Pronto para Deploy
