@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { InsertUser, users, InsertSurveyResponse, surveyResponses } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -87,6 +87,51 @@ export async function getUserByOpenId(openId: string) {
   const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
 
   return result.length > 0 ? result[0] : undefined;
+}
+
+export async function createSurveyResponse(data: InsertSurveyResponse) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database not available");
+  }
+
+  try {
+    const result = await db.insert(surveyResponses).values(data);
+    return result;
+  } catch (error) {
+    console.error("[Database] Failed to create survey response:", error);
+    throw error;
+  }
+}
+
+export async function getAllSurveyResponses() {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database not available");
+  }
+
+  try {
+    const results = await db.select().from(surveyResponses);
+    return results;
+  } catch (error) {
+    console.error("[Database] Failed to fetch survey responses:", error);
+    throw error;
+  }
+}
+
+export async function getSurveyResponseCount() {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database not available");
+  }
+
+  try {
+    const result = await db.select({ count: sql`COUNT(*)` }).from(surveyResponses);
+    return result[0]?.count || 0;
+  } catch (error) {
+    console.error("[Database] Failed to count survey responses:", error);
+    throw error;
+  }
 }
 
 // TODO: add feature queries here as your schema grows.

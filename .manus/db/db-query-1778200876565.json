@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE `survey_responses` MODIFY COLUMN `mealsPerDay` varchar(10);\nALTER TABLE `survey_responses` MODIFY COLUMN `waterLitersPerDay` varchar(10);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user gEvxy22Kf6d5B3h.root --database A4zrzWqR5f2dVbWF5yMfJk --execute ALTER TABLE `survey_responses` MODIFY COLUMN `mealsPerDay` varchar(10);\nALTER TABLE `survey_responses` MODIFY COLUMN `waterLitersPerDay` varchar(10);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 503
+}
