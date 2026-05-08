@@ -4,19 +4,23 @@ import { type Server } from "http";
 import { nanoid } from "nanoid";
 import path from "path";
 import { createServer as createViteServer } from "vite";
-import viteConfig from "../../vite.config";
+// NOTE: Do NOT import vite.config.ts here.
+// It has static top-level imports of @tailwindcss/vite, @vitejs/plugin-react,
+// etc. which are devDependencies. esbuild externalises them, so they end up
+// as unresolvable requires in dist/index.js when the production image runs
+// with only prod deps installed. Instead, tell Vite where the config file is
+// on disk and let Vite load it in its own process (dev only).
 
 export async function setupVite(app: Express, server: Server) {
-  const serverOptions = {
-    middlewareMode: true,
-    hmr: { server },
-    allowedHosts: true as const,
-  };
-
   const vite = await createViteServer({
-    ...viteConfig,
-    configFile: false,
-    server: serverOptions,
+    // Point Vite to the config file on disk. Vite loads it in its own context,
+    // so devDependency imports inside vite.config.ts never touch this bundle.
+    configFile: path.resolve(import.meta.dirname, "../../vite.config.ts"),
+    server: {
+      middlewareMode: true,
+      hmr: { server },
+      allowedHosts: true as true,
+    },
     appType: "custom",
   });
 
