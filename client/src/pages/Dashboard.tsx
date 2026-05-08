@@ -1,5 +1,4 @@
 import { useState, useMemo } from "react";
-import * as XLSX from "xlsx";
 import { useQuery } from "@tanstack/react-query";
 import { trpc } from "@/lib/trpc";
 import {
@@ -224,7 +223,13 @@ const PALETA = [COR.indigo, COR.verde, COR.amarelo, COR.vermelho, COR.roxo, COR.
 // EXPORTAR EXCEL — planilha limpa, legível, em português
 // ═══════════════════════════════════════════════════════════════════════════
 
-const exportarExcel = async (respostas: any[]) => {
+const exportarExcel = (respostas: any[]) => {
+
+  // Helper para escapar campos CSV
+  const esc = (v: any) => {
+    const s = String(v ?? "");
+    return s.includes(",") || s.includes('"') || s.includes("\n") ? `"${s.replace(/"/g, '""')}"` : s;
+  };
 
   // Aba 1: Respostas individuais
   const cabecalho = [
@@ -312,10 +317,11 @@ const exportarExcel = async (respostas: any[]) => {
     ];
   });
 
-  const ws1 = XLSX.utils.aoa_to_sheet([cabecalho, ...linhas]);
-  ws1["!cols"] = cabecalho.map(() => ({ wch: 28 }));
+  // Gerar CSV das respostas individuais
+  const todasLinhas = [cabecalho, ...linhas];
+  const csvRespostas = todasLinhas.map(row => row.map(esc).join(",")).join("\n");
 
-  // Aba 2: Resumo estatístico
+  // Gerar CSV do resumo estatístico
   const total = respostas.length;
   const resumoLinhas: any[][] = [
     ["RESUMO DA PESQUISA ENDOCRICHECK", "", ""],
@@ -326,51 +332,45 @@ const exportarExcel = async (respostas: any[]) => {
     ["Indicador", "Quantidade", "Percentual"],
   ];
 
-  // Sexo
   const porSexo = contarGrupos(respostas.map(r => traduz(SEXO, r.gender)));
   porSexo.forEach(g => resumoLinhas.push([`Sexo: ${g.name}`, g.valor, `${g.pct}%`]));
 
-  // Faixa etária
   resumoLinhas.push(["", "", ""], ["=== FAIXA ETÁRIA ===", "", ""], ["Faixa", "Quantidade", "Percentual"]);
   const porFaixa = contarGrupos(respostas.map(r => getFaixa(r.age)));
   porFaixa.forEach(g => resumoLinhas.push([g.name, g.valor, `${g.pct}%`]));
 
-  // IMC
   const imcs = respostas.map(r => toNum(r.bmi)).filter(v => v > 0);
   const imcMedio = imcs.length ? (imcs.reduce((a, b) => a + b, 0) / imcs.length) : 0;
   resumoLinhas.push(
     ["", "", ""],
     ["=== IMC ===", "", ""],
     ["IMC médio do grupo:", imcMedio.toFixed(2), classificarIMC(imcMedio)],
-    ["IMC mínimo:", Math.min(...imcs).toFixed(1), ""],
-    ["IMC máximo:", Math.max(...imcs).toFixed(1), ""],
+    ["IMC mínimo:", imcs.length ? Math.min(...imcs).toFixed(1) : "—", ""],
+    ["IMC máximo:", imcs.length ? Math.max(...imcs).toFixed(1) : "—", ""],
   );
   const porIMC = contarGrupos(respostas.map(r => classificarIMC(toNum(r.bmi))));
   porIMC.forEach(g => resumoLinhas.push([`IMC: ${g.name}`, g.valor, `${g.pct}%`]));
 
-  // Alimentação
   resumoLinhas.push(["", "", ""], ["=== HÁBITOS ALIMENTARES ===", "", ""], ["Indicador", "Quantidade", "Percentual"]);
   const ultraFreq = respostas.filter(r => ["always","frequently","often","3-5x_week","daily"].includes(r.ultraProcessedFreq)).length;
   const frutasRaro = respostas.filter(r => ["never","rarely"].includes(r.fruitsVegetablesFreq)).length;
   const semCafe = respostas.filter(r => ["never","rarely"].includes(r.breakfastFrequency)).length;
-  const fastFoodFreq = respostas.filter(r => ["3-5x_week","daily","always","frequently"].includes(r.fastFoodFrequency)).length;
+  const fastFoodFreq2 = respostas.filter(r => ["3-5x_week","daily","always","frequently"].includes(r.fastFoodFrequency)).length;
   const comNoite = respostas.filter(r => r.lateNightEating === "yes").length;
   resumoLinhas.push(
     ["Consomem ultraprocessados com frequência", ultraFreq, `${pct(ultraFreq, total)}%`],
     ["Raramente comem frutas e verduras", frutasRaro, `${pct(frutasRaro, total)}%`],
     ["Não tomam café da manhã regularmente", semCafe, `${pct(semCafe, total)}%`],
-    ["Comem fast food 3+ vezes por semana", fastFoodFreq, `${pct(fastFoodFreq, total)}%`],
+    ["Comem fast food 3+ vezes por semana", fastFoodFreq2, `${pct(fastFoodFreq2, total)}%`],
     ["Comem à noite com frequência", comNoite, `${pct(comNoite, total)}%`],
   );
 
-  // Atividade física
   resumoLinhas.push(["", "", ""], ["=== ATIVIDADE FÍSICA ===", "", ""], ["Nível", "Quantidade", "Percentual"]);
   const porAtividade = contarGrupos(respostas.map(r => traduz(ATIVIDADE, r.physicalActivityHours)));
   porAtividade.forEach(g => resumoLinhas.push([g.name, g.valor, `${g.pct}%`]));
 
-  // Sintomas
   resumoLinhas.push(["", "", ""], ["=== SINTOMAS ENDÓCRINOS ===", "", ""], ["Sintoma", "Quantidade", "Percentual"]);
-  const sintomas = [
+  const sintomasCampos = [
     ["Cansaço", "symptomFatigue"],
     ["Mudança de peso", "symptomWeightChange"],
     ["Sede excessiva", "symptomExcessiveThirst"],
@@ -383,18 +383,27 @@ const exportarExcel = async (respostas: any[]) => {
     ["Urinar com frequência", "symptomFrequentUrination"],
     ["Palpitações", "symptomPalpitations"],
   ];
-  sintomas.forEach(([nome, campo]) => {
+  sintomasCampos.forEach(([nome, campo]) => {
     const n = respostas.filter(r => r[campo]).length;
     resumoLinhas.push([nome, n, `${pct(n, total)}%`]);
   });
 
-  const ws2 = XLSX.utils.aoa_to_sheet(resumoLinhas);
-  ws2["!cols"] = [{ wch: 45 }, { wch: 15 }, { wch: 15 }];
+  const csvResumo = resumoLinhas.map(row => row.map(esc).join(",")).join("\n");
 
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws1, "Respostas Individuais");
-  XLSX.utils.book_append_sheet(wb, ws2, "Resumo Estatístico");
-  XLSX.writeFile(wb, `EndocriCheck_Pesquisa_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  // Combinar os dois CSVs em um único arquivo separado por linha em branco
+  const csvFinal = "\uFEFF" + // BOM para Excel reconhecer UTF-8
+    "=== RESPOSTAS INDIVIDUAIS ===\n" + csvRespostas +
+    "\n\n=== RESUMO ESTATÍSTICO ===\n" + csvResumo;
+
+  const blob = new Blob([csvFinal], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `EndocriCheck_Pesquisa_${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
