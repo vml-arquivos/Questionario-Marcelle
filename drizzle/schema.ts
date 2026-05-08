@@ -1,24 +1,24 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, json } from "drizzle-orm/mysql-core";
+import { integer, pgEnum, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
 
 /**
  * Core user table backing auth flow.
  * Extend this file with additional tables as your product grows.
  * Columns use camelCase to match both database fields and generated types.
  */
-export const users = mysqlTable("users", {
+export const users = pgTable("users", {
   /**
    * Surrogate primary key. Auto-incremented numeric value managed by the database.
    * Use this for relations between tables.
    */
-  id: int("id").autoincrement().primaryKey(),
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   /** Manus OAuth identifier (openId) returned from the OAuth callback. Unique per user. */
   openId: varchar("openId", { length: 64 }).notNull().unique(),
   name: text("name"),
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+  role: pgEnum("user_role", ["user", "admin"])("role").default("user").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt", { mode: "date" }).defaultNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
 });
 
@@ -28,16 +28,16 @@ export type InsertUser = typeof users.$inferInsert;
 /**
  * Survey responses table - stores all participant responses
  */
-export const surveyResponses = mysqlTable("survey_responses", {
-  id: int("id").autoincrement().primaryKey(),
+export const surveyResponses = pgTable("survey_responses", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   
   // Demographic data
   userType: varchar("userType", { length: 50 }).notNull(), // "student", "employee", "adult"
-  age: int("age").notNull(),
+  age: integer("age").notNull(),
   gender: varchar("gender", { length: 50 }).notNull(), // "male", "female", "other", "prefer_not_to_say"
-  weight: decimal("weight", { precision: 5, scale: 2 }).notNull(), // kg
-  height: decimal("height", { precision: 5, scale: 2 }).notNull(), // cm
-  bmi: decimal("bmi", { precision: 5, scale: 2 }).notNull(), // calculated
+  weight: varchar("weight", { length: 10 }).notNull(), // kg
+  height: varchar("height", { length: 10 }).notNull(), // cm
+  bmi: varchar("bmi", { length: 10 }).notNull(), // calculated
   
   // Eating habits
   ultraProcessedFreq: varchar("ultraProcessedFreq", { length: 50 }), // "never", "rarely", "sometimes", "frequently", "always"
@@ -54,12 +54,12 @@ export const surveyResponses = mysqlTable("survey_responses", {
   bloodPressureMedication: varchar("bloodPressureMedication", { length: 50 }), // "yes", "no" - FINDRISC
   
   // Endocrine symptoms (boolean flags)
-  symptomFatigue: int("symptomFatigue"), // 0 or 1
-  symptomWeightChange: int("symptomWeightChange"),
-  symptomExcessiveThirst: int("symptomExcessiveThirst"),
-  symptomTemperatureSensitivity: int("symptomTemperatureSensitivity"),
-  symptomDrySkin: int("symptomDrySkin"),
-  symptomMoodChanges: int("symptomMoodChanges"),
+  symptomFatigue: integer("symptomFatigue"), // 0 or 1
+  symptomWeightChange: integer("symptomWeightChange"),
+  symptomExcessiveThirst: integer("symptomExcessiveThirst"),
+  symptomTemperatureSensitivity: integer("symptomTemperatureSensitivity"),
+  symptomDrySkin: integer("symptomDrySkin"),
+  symptomMoodChanges: integer("symptomMoodChanges"),
   highBloodGlucoseHistory: varchar("highBloodGlucoseHistory", { length: 50 }), // "yes", "no" - FINDRISC
   
   // Family history
@@ -68,7 +68,7 @@ export const surveyResponses = mysqlTable("survey_responses", {
   familyObesity: varchar("familyObesity", { length: 50 }), // "yes", "no"
   
   // FINDRISC scoring
-  findrisc_score: int("findrisc_score"),
+  findrisc_score: integer("findrisc_score"),
   findrisc_risk_category: varchar("findrisc_risk_category", { length: 50 }), // "low", "slightly_moderate", "moderate", "high", "very_high"
   
   // Metadata

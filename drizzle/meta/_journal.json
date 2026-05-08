@@ -1,26 +1,12 @@
 {
   "version": "7",
-  "dialect": "mysql",
+  "dialect": "postgresql",
   "entries": [
     {
       "idx": 0,
-      "version": "5",
-      "when": 1778200292582,
-      "tag": "0000_stale_skaar",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "5",
-      "when": 1778200573696,
-      "tag": "0001_condemned_polaris",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "5",
-      "when": 1778200869779,
-      "tag": "0002_marvelous_ricochet",
+      "version": "7",
+      "when": 1778201582846,
+      "tag": "0000_soft_nextwave",
       "breakpoints": true
     }
   ]

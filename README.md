@@ -1,6 +1,10 @@
 # EndocriCheck - Sistema de Pesquisa sobre Saúde Endócrina
 
-Um sistema completo e elegante para coleta e análise de dados sobre saúde endócrina, desenvolvido com React, Node.js, tRPC e MySQL. Inclui formulário público com QR Code, cálculo automático de IMC, análise FINDRISC e dashboard administrativo com gráficos comparativos.
+**Pesquisador**: Marcelle Victoria Alves de Lima (1º F)  
+**Banco de Dados**: PostgreSQL 17  
+**Plataforma de Deploy**: Coolify  
+
+Um sistema completo e elegante para coleta e análise de dados sobre saúde endócrina, desenvolvido com React, Node.js, tRPC e PostgreSQL. Inclui formulário público com QR Code, cálculo automático de IMC, análise FINDRISC e dashboard administrativo com gráficos comparativos.
 
 ## 🎯 Funcionalidades
 
@@ -15,7 +19,7 @@ Um sistema completo e elegante para coleta e análise de dados sobre saúde end�
 ### Backend e API
 - ✅ API tRPC com procedures tipadas
 - ✅ Cálculo automático de FINDRISC (risco de diabetes tipo 2)
-- ✅ Armazenamento seguro de respostas em MySQL
+- ✅ Armazenamento seguro de respostas em PostgreSQL 17
 - ✅ Endpoints protegidos com autenticação
 
 ### Dashboard Administrativo
@@ -38,7 +42,7 @@ Um sistema completo e elegante para coleta e análise de dados sobre saúde end�
 ### Pré-requisitos
 - Node.js 22+
 - pnpm 10+
-- MySQL 8.0+
+- PostgreSQL 17+
 - Docker e Docker Compose (para deploy)
 
 ### Desenvolvimento Local

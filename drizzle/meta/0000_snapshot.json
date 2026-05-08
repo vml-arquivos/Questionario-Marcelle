@@ -1,53 +1,277 @@
 {
-  "version": "5",
-  "dialect": "mysql",
-  "id": "690aec89-9972-4c75-aae3-5dab306baeb1",
+  "id": "360a5d59-fd5c-4afe-86d2-e7cbfde11155",
   "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
   "tables": {
-    "users": {
-      "name": "users",
+    "public.survey_responses": {
+      "name": "survey_responses",
+      "schema": "",
       "columns": {
         "id": {
           "name": "id",
-          "type": "int",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "identity": {
+            "type": "always",
+            "name": "survey_responses_id_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "2147483647",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "userType": {
+          "name": "userType",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "age": {
+          "name": "age",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "gender": {
+          "name": "gender",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "weight": {
+          "name": "weight",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "height": {
+          "name": "height",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bmi": {
+          "name": "bmi",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ultraProcessedFreq": {
+          "name": "ultraProcessedFreq",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fruitsVegetablesFreq": {
+          "name": "fruitsVegetablesFreq",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sweetsFreq": {
+          "name": "sweetsFreq",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mealsPerDay": {
+          "name": "mealsPerDay",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "waterLitersPerDay": {
+          "name": "waterLitersPerDay",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "physicalActivityHours": {
+          "name": "physicalActivityHours",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "smokingStatus": {
+          "name": "smokingStatus",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "alcoholFrequency": {
+          "name": "alcoholFrequency",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sleepQuality": {
+          "name": "sleepQuality",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bloodPressureMedication": {
+          "name": "bloodPressureMedication",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "symptomFatigue": {
+          "name": "symptomFatigue",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "symptomWeightChange": {
+          "name": "symptomWeightChange",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "symptomExcessiveThirst": {
+          "name": "symptomExcessiveThirst",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "symptomTemperatureSensitivity": {
+          "name": "symptomTemperatureSensitivity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "symptomDrySkin": {
+          "name": "symptomDrySkin",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "symptomMoodChanges": {
+          "name": "symptomMoodChanges",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "highBloodGlucoseHistory": {
+          "name": "highBloodGlucoseHistory",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "familyDiabetes": {
+          "name": "familyDiabetes",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "familyThyroidIssues": {
+          "name": "familyThyroidIssues",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "familyObesity": {
+          "name": "familyObesity",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "findrisc_score": {
+          "name": "findrisc_score",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "findrisc_risk_category": {
+          "name": "findrisc_risk_category",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "submittedAt": {
+          "name": "submittedAt",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": true
+          "default": "now()"
+        },
+        "ipAddress": {
+          "name": "ipAddress",
+          "type": "varchar(45)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "userAgent": {
+          "name": "userAgent",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.users": {
+      "name": "users",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "identity": {
+            "type": "always",
+            "name": "users_id_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "2147483647",
+            "cache": "1",
+            "cycle": false
+          }
         },
         "openId": {
           "name": "openId",
           "type": "varchar(64)",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "name": {
           "name": "name",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "email": {
           "name": "email",
           "type": "varchar(320)",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "loginMethod": {
           "name": "loginMethod",
           "type": "varchar(64)",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "role": {
           "name": "role",
-          "type": "enum('user','admin')",
+          "type": "user_role",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
           "default": "'user'"
         },
         "createdAt": {
@@ -55,56 +279,49 @@
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(now())"
+          "default": "now()"
         },
         "updatedAt": {
           "name": "updatedAt",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "onUpdate": true,
-          "default": "(now())"
+          "default": "now()"
         },
         "lastSignedIn": {
           "name": "lastSignedIn",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(now())"
+          "default": "now()"
         }
       },
       "indexes": {},
       "foreignKeys": {},
-      "compositePrimaryKeys": {
-        "users_id": {
-          "name": "users_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "users_openId_unique": {
           "name": "users_openId_unique",
+          "nullsNotDistinct": false,
           "columns": [
             "openId"
           ]
         }
       },
-      "checkConstraint": {}
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     }
   },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
   "views": {},
   "_meta": {
+    "columns": {},
     "schemas": {},
-    "tables": {},
-    "columns": {}
-  },
-  "internal": {
-    "tables": {},
-    "indexes": {}
+    "tables": {}
   }
 }

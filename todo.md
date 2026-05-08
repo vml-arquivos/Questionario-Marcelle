@@ -61,3 +61,18 @@
 - [x] Criar README com instruções de deploy
 - [x] Documentar variáveis de ambiente
 - [x] Preparar instruções para Coolify
+
+
+## Fase 11: Configuração para PostgreSQL 17 e Coolify
+- [ ] Atualizar schema Drizzle para PostgreSQL
+- [ ] Configurar variáveis de ambiente para Coolify
+- [ ] Atualizar README com instruções PostgreSQL
+- [ ] Atualizar docker-compose para PostgreSQL 17
+- [ ] Testar conexão com PostgreSQL
+- [ ] Fazer commit final com configurações PostgreSQL
+- [ ] Preparar instruções de deploy via Coolify
+
+## Fase 12: Informações do Pesquisador
+- [ ] Adicionar dados de Marcelle Victoria Alves de Lima
+- [ ] Configurar identificação do projeto
+- [ ] Fazer commit final com identificação
