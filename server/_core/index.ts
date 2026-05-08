@@ -75,6 +75,35 @@ async function startServer() {
     }
   });
 
+  // ── /api/clear-responses — apaga todas as respostas (protegido por senha) ──
+  app.post("/api/clear-responses", async (req, res) => {
+    const { password } = req.body as { password?: string };
+    const DASHBOARD_PASSWORD = process.env.DASHBOARD_PASSWORD ?? "endocricheck2025";
+    if (!password || password !== DASHBOARD_PASSWORD) {
+      res.status(401).json({ ok: false, error: "Senha incorreta" });
+      return;
+    }
+    try {
+      const pool = getPool();
+      const client = await pool.connect();
+      try {
+        const countBefore = await client.query(`SELECT COUNT(*) as total FROM "survey_responses"`);
+        await client.query(`DELETE FROM "survey_responses"`);
+        // Reset the identity sequence so IDs start from 1 again
+        await client.query(`ALTER SEQUENCE survey_responses_id_seq RESTART WITH 1`);
+        res.json({
+          ok: true,
+          message: "Todas as respostas foram apagadas",
+          deletedCount: parseInt(countBefore.rows[0].total),
+        });
+      } finally {
+        client.release();
+      }
+    } catch (err) {
+      res.status(500).json({ ok: false, error: String(err) });
+    }
+  });
+
   // ── /api/db-status — read-only diagnostic endpoint ───────────────────────
   app.get("/api/db-status", async (_req, res) => {
     try {
