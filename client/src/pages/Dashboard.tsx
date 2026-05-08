@@ -1,5 +1,4 @@
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { trpc } from "@/lib/trpc";
 import {
   BarChart, Bar, PieChart, Pie, Cell,
@@ -480,9 +479,10 @@ export default function Dashboard() {
   const [filtroFaixa, setFiltroFaixa] = useState("Todas");
   const [filtroSexo, setFiltroSexo] = useState("Todos");
 
-  const { data: todasRespostas = [], isLoading, refetch } = useQuery(
-    trpc.survey.getResponses.queryOptions()
-  );
+  const { data: todasRespostas = [], isLoading, refetch } = trpc.survey.getResponses.useQuery(undefined, {
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
 
   // Aplicar filtros
   const respostas = useMemo(() => {
