@@ -1,6 +1,7 @@
 export const ENV = {
   appId: process.env.VITE_APP_ID ?? "",
-  cookieSecret: process.env.JWT_SECRET ?? "",
+  // Accept SESSION_SECRET (Coolify default) or JWT_SECRET
+  cookieSecret: process.env.JWT_SECRET ?? process.env.SESSION_SECRET ?? "",
   databaseUrl: process.env.DATABASE_URL ?? "",
   oAuthServerUrl: process.env.OAUTH_SERVER_URL ?? "",
   ownerOpenId: process.env.OWNER_OPEN_ID ?? "",
