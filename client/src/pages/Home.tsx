@@ -1,13 +1,21 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { LoginModal } from "@/components/LoginModal";
 import { useLocation } from "wouter";
 import { FileText, BarChart3, QrCode, Users } from "lucide-react";
-import { getLoginUrl } from "@/const";
+import { useState } from "react";
 
 export default function Home() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, refresh } = useAuth();
   const [, navigate] = useLocation();
+  const [loginOpen, setLoginOpen] = useState(false);
+
+  const handleLoginSuccess = () => {
+    setLoginOpen(false);
+    refresh();
+    navigate("/dashboard");
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
@@ -27,7 +35,7 @@ export default function Home() {
                 </Button>
               </div>
             ) : (
-              <Button onClick={() => (window.location.href = getLoginUrl())} className="bg-blue-600 hover:bg-blue-700">
+              <Button onClick={() => setLoginOpen(true)} className="bg-blue-600 hover:bg-blue-700">
                 Entrar
               </Button>
             )}
@@ -108,6 +116,12 @@ export default function Home() {
           <p className="text-sm mt-2">Pesquisadora: Marcelle Victoria Alves de Lima (1º F)</p>
         </div>
       </footer>
+      {/* Login Modal */}
+      <LoginModal
+        open={loginOpen}
+        onClose={() => setLoginOpen(false)}
+        onSuccess={handleLoginSuccess}
+      />
     </div>
   );
 }

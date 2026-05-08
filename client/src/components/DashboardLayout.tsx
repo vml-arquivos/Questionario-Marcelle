@@ -19,7 +19,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { getLoginUrl } from "@/const";
+import { LoginModal } from "@/components/LoginModal";
 import { useIsMobile } from "@/hooks/useMobile";
 import { LayoutDashboard, LogOut, PanelLeft, Users } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
@@ -46,7 +46,8 @@ export default function DashboardLayout({
     const saved = localStorage.getItem(SIDEBAR_WIDTH_KEY);
     return saved ? parseInt(saved, 10) : DEFAULT_WIDTH;
   });
-  const { loading, user } = useAuth();
+  const { loading, user, refresh } = useAuth();
+  const [loginOpen, setLoginOpen] = useState(false);
 
   useEffect(() => {
     localStorage.setItem(SIDEBAR_WIDTH_KEY, sidebarWidth.toString());
@@ -58,26 +59,29 @@ export default function DashboardLayout({
 
   if (!user) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
         <div className="flex flex-col items-center gap-8 p-8 max-w-md w-full">
-          <div className="flex flex-col items-center gap-6">
-            <h1 className="text-2xl font-semibold tracking-tight text-center">
-              Sign in to continue
+          <div className="flex flex-col items-center gap-4">
+            <h1 className="text-2xl font-semibold tracking-tight text-center text-gray-900">
+              Acesso Restrito
             </h1>
             <p className="text-sm text-muted-foreground text-center max-w-sm">
-              Access to this dashboard requires authentication. Continue to launch the login flow.
+              Esta área é exclusiva para a pesquisadora. Digite a senha para acessar os relatórios e gráficos.
             </p>
           </div>
           <Button
-            onClick={() => {
-              window.location.href = getLoginUrl();
-            }}
+            onClick={() => setLoginOpen(true)}
             size="lg"
-            className="w-full shadow-lg hover:shadow-xl transition-all"
+            className="w-full bg-indigo-600 hover:bg-indigo-700 shadow-lg hover:shadow-xl transition-all"
           >
-            Sign in
+            Entrar no Dashboard
           </Button>
         </div>
+        <LoginModal
+          open={loginOpen}
+          onClose={() => setLoginOpen(false)}
+          onSuccess={() => { setLoginOpen(false); refresh(); }}
+        />
       </div>
     );
   }

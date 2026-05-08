@@ -96,7 +96,9 @@ const redirectToLoginIfUnauthorized = (error: unknown) => {
   if (!(error instanceof TRPCClientError)) return;
   if (typeof window === "undefined") return;
   if (error.message !== UNAUTHED_ERR_MSG) return;
-  window.location.href = getLoginUrl();
+  // Redirect to home page where the user can open the login modal
+  if (!window.location.pathname.startsWith("/dashboard")) return;
+  window.location.href = "/";
 };
 
 queryClient.getQueryCache().subscribe(event => {

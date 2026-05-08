@@ -1,4 +1,3 @@
-import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { TRPCClientError } from "@trpc/client";
 import { useCallback, useEffect, useMemo } from "react";
@@ -72,8 +71,8 @@ export function useAuth(options?: UseAuthOptions) {
     if (state.user) return;
     if (typeof window === "undefined") return;
 
-    // Only compute the login URL here, at the moment we actually need to redirect.
-    const target = redirectPath ?? getLoginUrl();
+    // Redirect to home page where the user can open the login modal.
+    const target = redirectPath ?? "/";
     if (window.location.pathname === target) return;
 
     window.location.href = target;
