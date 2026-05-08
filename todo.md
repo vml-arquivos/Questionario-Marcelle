@@ -37,7 +37,7 @@
 - [x] Implementar cálculo completo do FINDRISC
 - [x] Visualizar resultados de risco no dashboard
 - [x] Implementar exportação CSV
-- [ ] Testes de funcionalidade
+- [x] Testes de funcionalidade
 
 ## Fase 7: Landing Page
 - [x] Criar Home.tsx com landing page elegante
