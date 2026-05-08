@@ -9,8 +9,14 @@ type UseAuthOptions = {
 };
 
 export function useAuth(options?: UseAuthOptions) {
-  const { redirectOnUnauthenticated = false, redirectPath = getLoginUrl() } =
-    options ?? {};
+  const {
+    redirectOnUnauthenticated = false,
+    // Lazy-evaluate getLoginUrl so it only runs when redirecting is actually
+    // needed — not on every render. This avoids "TypeError: Invalid URL" when
+    // VITE_OAUTH_PORTAL_URL is undefined and the hook is used on public pages.
+    redirectPath = options?.redirectPath ?? undefined,
+  } = options ?? {};
+
   const utils = trpc.useUtils();
 
   const meQuery = trpc.auth.me.useQuery(undefined, {
@@ -65,9 +71,12 @@ export function useAuth(options?: UseAuthOptions) {
     if (meQuery.isLoading || logoutMutation.isPending) return;
     if (state.user) return;
     if (typeof window === "undefined") return;
-    if (window.location.pathname === redirectPath) return;
 
-    window.location.href = redirectPath
+    // Only compute the login URL here, at the moment we actually need to redirect.
+    const target = redirectPath ?? getLoginUrl();
+    if (window.location.pathname === target) return;
+
+    window.location.href = target;
   }, [
     redirectOnUnauthenticated,
     redirectPath,
