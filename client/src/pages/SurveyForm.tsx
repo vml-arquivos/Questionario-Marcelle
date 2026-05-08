@@ -17,8 +17,6 @@ interface FormData {
   weight: string;
   height: string;
   // Social determinants
-  educationLevel: string;
-  incomeRange: string;
   existingDiagnosis: string;
   onMedication: string;
   // Eating habits
@@ -75,8 +73,6 @@ const initialFormData: FormData = {
   gender: "",
   weight: "",
   height: "",
-  educationLevel: "",
-  incomeRange: "",
   existingDiagnosis: "",
   onMedication: "",
   ultraProcessedFreq: "",
@@ -186,8 +182,6 @@ export default function SurveyForm() {
         weight: parseFloat(formData.weight),
         height: parseFloat(formData.height),
         bmi: parseFloat(bmi),
-        educationLevel: formData.educationLevel || null,
-        incomeRange: formData.incomeRange || null,
         existingDiagnosis: formData.existingDiagnosis || null,
         onMedication: formData.onMedication || null,
         ultraProcessedFreq: formData.ultraProcessedFreq || null,
@@ -368,31 +362,6 @@ export default function SurveyForm() {
                     <p className="text-sm text-indigo-700">IMC calculado: <strong>{bmi}</strong></p>
                   </div>
                 )}
-                <div>
-                  <Label className="text-base font-semibold mb-2 block">Nível de escolaridade</Label>
-                  <Select value={formData.educationLevel} onValueChange={(v) => handleInputChange("educationLevel", v)}>
-                    <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="fundamental">Ensino Fundamental</SelectItem>
-                      <SelectItem value="medio">Ensino Médio</SelectItem>
-                      <SelectItem value="superior">Ensino Superior</SelectItem>
-                      <SelectItem value="pos_graduacao">Pós-graduação</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="text-base font-semibold mb-2 block">Faixa de renda familiar</Label>
-                  <Select value={formData.incomeRange} onValueChange={(v) => handleInputChange("incomeRange", v)}>
-                    <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ate_1sm">Até 1 salário mínimo</SelectItem>
-                      <SelectItem value="1-3sm">1 a 3 salários mínimos</SelectItem>
-                      <SelectItem value="3-5sm">3 a 5 salários mínimos</SelectItem>
-                      <SelectItem value="5-10sm">5 a 10 salários mínimos</SelectItem>
-                      <SelectItem value="acima_10sm">Acima de 10 salários mínimos</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
                 <div>
                   <Label className="text-base font-semibold mb-2 block">Você tem algum diagnóstico médico já existente?</Label>
                   <Select value={formData.existingDiagnosis} onValueChange={(v) => handleInputChange("existingDiagnosis", v)}>

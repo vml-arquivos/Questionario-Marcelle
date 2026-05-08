@@ -39,9 +39,7 @@ export const surveyResponses = pgTable("survey_responses", {
   height: varchar("height", { length: 10 }).notNull(), // cm
   bmi: varchar("bmi", { length: 10 }).notNull(), // calculated
 
-  // Social determinants of health
-  educationLevel: varchar("educationLevel", { length: 30 }),     // "fundamental","medio","superior","pos_graduacao"
-  incomeRange: varchar("incomeRange", { length: 20 }),           // "ate_1sm","1-3sm","3-5sm","5-10sm","acima_10sm"
+  // Social determinants of health (escolaridade e renda removidas por privacidade)
   existingDiagnosis: varchar("existingDiagnosis", { length: 100 }), // "none","diabetes","hypertension","thyroid","obesity","other"
   onMedication: varchar("onMedication", { length: 10 }),         // "yes","no"
 

@@ -92,8 +92,6 @@ export const appRouter = router({
           familyThyroidIssues: z.string().nullable(),
           familyObesity: z.string().nullable(),
           // Social determinants of health
-          educationLevel: z.string().nullable(),
-          incomeRange: z.string().nullable(),
           existingDiagnosis: z.string().nullable(),
           onMedication: z.string().nullable(),
           // Detailed food fields
@@ -167,8 +165,6 @@ export const appRouter = router({
           familyThyroidIssues: input.familyThyroidIssues,
           familyObesity: input.familyObesity,
           // Social determinants
-          educationLevel: input.educationLevel,
-          incomeRange: input.incomeRange,
           existingDiagnosis: input.existingDiagnosis,
           onMedication: input.onMedication,
           // Detailed food

@@ -1,5 +1,8 @@
 import { eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
+import { migrate } from "drizzle-orm/node-postgres/migrator";
+import path from "path";
+import { fileURLToPath } from "url";
 import { Pool } from "pg";
 import {
   InsertSurveyResponse,
@@ -9,7 +12,10 @@ import {
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 let _db: ReturnType<typeof drizzle> | null = null;
+let _migrated = false;
 
 // Lazily create the drizzle instance so local tooling can run without a DB.
 export async function getDb() {
@@ -17,6 +23,18 @@ export async function getDb() {
     try {
       const pool = new Pool({ connectionString: process.env.DATABASE_URL });
       _db = drizzle(pool);
+      // Run migrations automatically on first connection
+      if (!_migrated) {
+        try {
+          const migrationsFolder = path.resolve(__dirname, "../drizzle");
+          await migrate(_db, { migrationsFolder });
+          _migrated = true;
+          console.log("[Database] Migrations applied successfully");
+        } catch (migErr) {
+          console.warn("[Database] Migration warning (non-fatal):", migErr);
+          _migrated = true; // Don't retry on every request
+        }
+      }
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;

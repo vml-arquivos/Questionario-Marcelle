@@ -66,8 +66,6 @@ export default function Dashboard() {
       "Altura (cm)",
       "IMC",
       // Determinantes sociais
-      "Escolaridade",
-      "Renda Familiar",
       "Diagnóstico Existente",
       "Usa Medicamento",
       // Hábitos alimentares
@@ -130,8 +128,6 @@ export default function Dashboard() {
       r.height,
       r.bmi,
       // Determinantes sociais
-      (r as Record<string, unknown>).educationLevel || "",
-      (r as Record<string, unknown>).incomeRange || "",
       (r as Record<string, unknown>).existingDiagnosis || "",
       (r as Record<string, unknown>).onMedication || "",
       // Hábitos alimentares
